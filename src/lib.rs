@@ -14,6 +14,7 @@ pub mod langs;
 pub mod swar;
 
 /// Run the command line arguments the process was started with.
+#[must_use]
 pub fn run() -> std::process::ExitCode {
 	cli::run(std::env::args_os())
 }

@@ -47,6 +47,7 @@ pub enum OutputFormat {
 impl OutputFormat {
 	pub const VALUES: &'static [&'static str] = &["human", "json", "json-compact"];
 
+	#[must_use]
 	pub fn from_cli(value: &str) -> Option<Self> {
 		match value {
 			"human" => Some(Self::Human),

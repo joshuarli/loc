@@ -5,6 +5,7 @@ macro_rules! cli_values {
 		impl $enum {
 			pub const VALUES: &'static [&'static str] = &[$($text,)*];
 
+			#[must_use]
 			pub fn from_cli(value: &str) -> Option<Self> {
 				match value {
 					$($text => Some(Self::$variant),)*
