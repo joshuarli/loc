@@ -86,6 +86,11 @@ const DEFAULT_CONFIG_TEMPLATE: &str = "\
 # by_dir = false
 ";
 
+/// Write a default configuration file listing every setting.
+///
+/// # Errors
+///
+/// Returns an error if the file exists and `force` is false, or the file can't be written.
 pub fn run_init(output: Option<PathBuf>, force: bool) -> Result<()> {
 	let path = output.unwrap_or_else(|| PathBuf::from(DEFAULT_CONFIG_PATH));
 	if !force && Path::new(&path).exists() {

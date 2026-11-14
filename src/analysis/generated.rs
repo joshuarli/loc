@@ -65,6 +65,7 @@ const ENDINGS: &[&str] = &[
 ];
 
 /// Whether a file's name says it's generated: a lockfile, minified asset, translation, or what an IDE or interface designer saves. Matched here rather than as globs on the walk, which would cost every path a glob match.
+#[must_use]
 pub fn is_generated_name(name: &str) -> bool {
 	let Some((stem, extension)) = name.rsplit_once('.') else { return false };
 	if stem.is_empty() {
@@ -82,6 +83,7 @@ pub fn is_generated_name(name: &str) -> bool {
 const VISUAL_STUDIO_NAMESPACE: &[u8] = b"schemas.microsoft.com/developer/msbuild/2003";
 
 /// Whether a file is a project file Visual Studio wrote: a C# or Visual Basic project from before SDK-style projects, or any Visual C++ project, which list every source file and build configuration.
+#[must_use]
 pub fn is_visual_studio_project(name: &str, bytes: &[u8]) -> bool {
 	let project = [".csproj", ".vbproj", ".fsproj", ".vcxproj"].iter().any(|ending| name.ends_with(ending));
 	project && memchr::memmem::find(&bytes[..bytes.len().min(HEADER_BYTES)], VISUAL_STUDIO_NAMESPACE).is_some()

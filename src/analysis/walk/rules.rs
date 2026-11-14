@@ -173,8 +173,8 @@ impl DirRules {
 /// They're built with `.` as their root, and given paths relative to where they apply. With any other root, `Gitignore` compares it with `.` by parsing path components for every path, which takes up to 6% of a run.
 fn read_rules(directory: &Path, name: &str, errors: &mut Vec<Error>) -> Option<Gitignore> {
 	let path = directory.join(name);
-	// A `stat` is cheaper than failing to open the file, except on Windows.
-	if !cfg!(windows) && !path.exists() {
+	// A `stat` is cheaper than failing to open the file.
+	if !path.exists() {
 		return None;
 	}
 	let mut builder = GitignoreBuilder::new(".");
@@ -253,7 +253,7 @@ impl Rules {
 	}
 
 	/// Whether the walk leaves this path out. `--exclude` decides first, then ignore files, then whether it's hidden. A path an ignore file lets back in counts even if hidden.
-	pub(super) fn skips(&self, path: &Path, is_dir: bool, hidden_attribute: bool, shared: &Shared) -> bool {
+	pub(super) fn skips(&self, path: &Path, is_dir: bool, shared: &Shared) -> bool {
 		let path = strip_start(Path::new("./"), path).unwrap_or(path);
 		let matched =
 			shared.overrides.as_ref().map_or(Match::None, |overrides| overrides.matched(path, is_dir).map(|_| ()));
@@ -262,7 +262,7 @@ impl Rules {
 		if matched.is_ignore() {
 			return true;
 		}
-		matched.is_none() && shared.skip_hidden && (hidden_attribute || listed_name(path).starts_with(b"."))
+		matched.is_none() && shared.skip_hidden && listed_name(path).starts_with(b".")
 	}
 
 	fn matched(&self, path: &Path, is_dir: bool, shared: &Shared) -> Match<()> {

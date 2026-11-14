@@ -27,20 +27,19 @@ codestats counts the code, comment, blank, and shebang lines in a codebase by la
 
 ### Download a binary
 
-Download the binary for your platform from [GitHub Releases](https://github.com/trypsynth/codestats/releases/latest):
+Pick the newest prerelease on the [releases page](https://github.com/trypsynth/codestats/releases) and download the archive for your platform. Every release ships a `SHA256SUMS` file next to the archives; verify one after downloading:
 
-| Platform | Download |
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+| Platform | Asset |
 | --- | --- |
-| Linux x86_64 | [cs-x86_64-unknown-linux-gnu](https://github.com/trypsynth/codestats/releases/latest/download/cs-x86_64-unknown-linux-gnu) |
-| Linux ARM64 | [cs-aarch64-unknown-linux-gnu](https://github.com/trypsynth/codestats/releases/latest/download/cs-aarch64-unknown-linux-gnu) |
-| Linux x86_64, static (musl) | [cs-x86_64-unknown-linux-musl](https://github.com/trypsynth/codestats/releases/latest/download/cs-x86_64-unknown-linux-musl) |
-| Linux ARM64, static (musl) | [cs-aarch64-unknown-linux-musl](https://github.com/trypsynth/codestats/releases/latest/download/cs-aarch64-unknown-linux-musl) |
-| macOS Intel | [cs-x86_64-apple-darwin](https://github.com/trypsynth/codestats/releases/latest/download/cs-x86_64-apple-darwin) |
-| macOS Apple Silicon | [cs-aarch64-apple-darwin](https://github.com/trypsynth/codestats/releases/latest/download/cs-aarch64-apple-darwin) |
-| Windows x86_64 | [cs-x86_64-pc-windows-gnu.exe](https://github.com/trypsynth/codestats/releases/latest/download/cs-x86_64-pc-windows-gnu.exe) |
-| Windows ARM64 | [cs-aarch64-pc-windows-gnullvm.exe](https://github.com/trypsynth/codestats/releases/latest/download/cs-aarch64-pc-windows-gnullvm.exe) |
+| Linux x86_64, static (musl) | `cs-x86_64-unknown-linux-musl-static.zip` |
+| Linux ARM64, static (musl) | `cs-aarch64-unknown-linux-musl-static.zip` |
+| macOS Apple Silicon | `cs-aarch64-apple-darwin.zip` |
 
-The standard Linux binaries need glibc 2.17 or later and run faster than the static ones. Use the static binaries on systems without glibc, such as Alpine.
+The static Linux binaries run on any Linux, including Alpine. Windows is no longer supported.
 
 On Linux and macOS, make the binary executable and move it to a directory on your `PATH`:
 
@@ -55,7 +54,7 @@ sudo mv cs-* /usr/local/bin/cs
 cargo install codestats
 ```
 
-This requires Rust 1.88 or later. Release binaries are built with profile-guided optimization, so they run faster than a build from `cargo install`. The minimum Rust version only increases in minor releases, never in patch releases.
+This requires Rust 1.88 or later. The minimum Rust version only increases in minor releases, never in patch releases.
 
 ### Build from source
 
@@ -346,7 +345,7 @@ To run LineJudge locally:
 
 ## Benchmarks
 
-All times are for files already in the file cache, on an AMD Ryzen 7 PRO 5850U (8 cores, 16 threads) with 32 GB of RAM. They use the x86-64 Linux glibc binary that CI built at commit `d3c937a`, which is the same build a release ships.
+All times are for files already in the file cache, on an AMD Ryzen 7 PRO 5850U (8 cores, 16 threads) with 32 GB of RAM. They use the x86-64 Linux glibc binary that CI built at commit `d3c937a`. Releases no longer ship glibc builds; the closest current build is the x86-64 musl static binary.
 
 ### Equal work
 
@@ -410,22 +409,31 @@ Each tool ran 20 times, or 10 times for rust and linux, in rounds of two runs pe
 
 To reproduce these tables, run `CS=path/to/cs scripts/bench.sh`, which pins each repository's commit. It uses hyperfine 2.0.0 and these tools: mezura 3.5.0, tokei 15.0.0, scc 4.1.0, and gocloc 0.7.0.
 
-### Windows
+## Development
 
-These times are from a different machine than the tables above, so don't compare the two. It has an AMD Ryzen 9 5950X (16 cores, 32 threads) and 128 GB of RAM, and runs Windows 11 with Microsoft Defender real-time protection on. They use the x86-64 Windows binary that CI built at commit `d3c937a`, compared with mezura 3.5.0. Each time is a median of 10 to 40 runs for files already in the file cache, and includes about 14 ms to start a process.
+Use the toolchain pinned in [rust-toolchain.toml](rust-toolchain.toml).
+The [Makefile](Makefile) drives the common tasks:
 
-| Repository | Files | Lines | Settings | codestats | mezura |
-| --- | ---: | ---: | --- | ---: | ---: |
-| [cpython](https://github.com/python/cpython) | 3,626 | 2.3M | Equal work | **48 ms** | 59 ms |
-| [kubernetes](https://github.com/kubernetes/kubernetes) | 18,399 | 5.6M | Equal work | **182 ms** | 191 ms |
-| [ripgrep](https://github.com/BurntSushi/ripgrep) | 156 | 65K | Default | **21 ms** | 35 ms |
-| [cli](https://github.com/cli/cli) | 1,102 | 312K | Default | **38 ms** | 50 ms |
-| [cpython](https://github.com/python/cpython) | 4,828 | 2.5M | Default | 68 ms | **67 ms** |
-| [kubernetes](https://github.com/kubernetes/kubernetes) | 22,685 | 5.2M | Default | 266 ms | **246 ms** |
+```sh
+make build         # cargo build
+make test          # the test suite
+make check         # clippy with -D warnings, plus tests
+make lint          # check, plus ruff on scripts
+make bench         # compare the benchmark suite against benches/baseline.json
+make release TARGET=x86_64-unknown-linux-musl   # the static dist binary
+make verify-release TARGET=x86_64-unknown-linux-musl
+```
 
-At default settings, the tools don't count the same files. For example, mezura counts 17,108 files in kubernetes, where codestats counts 22,685, a third more. The file and line counts in the table are from codestats.
+Keep scratch files under the ignored `.work/` directory:
+`TMPDIR="$PWD/.work/tmp" make test`.
 
-To reproduce this table, run `powershell -ExecutionPolicy Bypass -File scripts/bench-windows.ps1`.
+Linux release binaries are built with `-Z build-std` in a pinned Alpine
+container ([Dockerfile](Dockerfile)), and `make verify-release` checks their ELF
+linking. `make install` installs the dist binary to `~/.local/bin`.
+
+Prereleases are cut by dispatching the `release` workflow on the default
+branch. Each dispatch publishes an archive per platform with a `SHA256SUMS`
+file; verify an archive after downloading with `sha256sum -c`.
 
 ## License
 

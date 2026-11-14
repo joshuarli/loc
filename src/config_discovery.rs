@@ -1,8 +1,7 @@
 //! Locates a `.codestats.toml`/`config.toml` on the local filesystem.
 //!
-//! This is deliberately kept out of the `codestats` lib: "search the user's
-//! home directory and XDG dirs for a dotfile" only makes sense for a desktop
-//! CLI, not a library that might run in a browser or against an uploaded zip.
+//! Searching the user's home directory and XDG dirs is only meaningful for a
+//! command-line front end, not for analysis of an already located tree.
 
 use std::{env, path::PathBuf};
 
@@ -25,11 +24,7 @@ fn config_dir() -> Option<PathBuf> {
 	{
 		home_dir().map(|h| h.join("Library/Application Support"))
 	}
-	#[cfg(target_os = "windows")]
-	{
-		env::var_os("APPDATA").map(PathBuf::from)
-	}
-	#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+	#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 	{
 		home_dir().map(|h| h.join(".config"))
 	}

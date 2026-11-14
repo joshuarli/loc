@@ -40,6 +40,10 @@ pub fn parse_list(list: &[u8]) -> Vec<PathBuf> {
 /// # Errors
 ///
 /// Returns an error if an `--exclude` pattern is invalid, or walking a listed directory fails.
+///
+/// # Panics
+///
+/// Panics if a counting thread panics.
 pub fn count_listed(paths: &[PathBuf], config: &AnalyzerConfig) -> Result<AnalysisResults> {
 	let analysis = &config.analysis;
 	let filter = PathFilter::new(Path::new("."), analysis, false)?;

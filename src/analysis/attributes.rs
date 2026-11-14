@@ -221,7 +221,7 @@ pub struct DirCache {
 
 /// Whether `byte` separates a path's components.
 const fn is_separator(byte: u8) -> bool {
-	byte == b'/' || (cfg!(windows) && byte == b'\\')
+	byte == b'/'
 }
 
 /// The FNV-1a hash, much cheaper than the default for the short keys of paths, which needn't resist attacks.

@@ -6,6 +6,7 @@ const HIGH: u64 = 0x8080_8080_8080_8080;
 
 /// Load up to eight bytes, padding with zeros.
 #[inline]
+#[must_use]
 pub fn load(bytes: &[u8]) -> u64 {
 	let mut word = [0u8; 8];
 	word[..bytes.len()].copy_from_slice(bytes);
@@ -14,6 +15,7 @@ pub fn load(bytes: &[u8]) -> u64 {
 
 /// High bit set in each byte with `low <= byte < high`, for ASCII bounds. Bytes of 0x80 and up never match.
 #[inline]
+#[must_use]
 pub const fn in_range(x: u64, low: u8, high: u8) -> u64 {
 	// Clearing the high bits first keeps the sums from carrying into the next byte.
 	let seven = x & !HIGH;
@@ -24,6 +26,7 @@ pub const fn in_range(x: u64, low: u8, high: u8) -> u64 {
 
 /// High bit set in each byte equal to `b`, an ASCII byte.
 #[inline]
+#[must_use]
 pub const fn equal(x: u64, b: u8) -> u64 {
 	let seven = x & !HIGH;
 	!((seven ^ (b as u64 * ONES)) + !HIGH) & !x & HIGH
@@ -31,12 +34,14 @@ pub const fn equal(x: u64, b: u8) -> u64 {
 
 /// Gather the eight high bits into the low eight bits, byte `i` to bit `i`.
 #[inline]
+#[must_use]
 pub const fn bits(high: u64) -> u64 {
 	(high >> 7).wrapping_mul(0x0102_0408_1020_4080) >> 56
 }
 
 /// High bit set in each identifier byte (ASCII letter, digit or `_`).
 #[inline]
+#[must_use]
 pub const fn word(x: u64) -> u64 {
 	in_range(x, b'0', b'9' + 1) | in_range(x | 0x2020_2020_2020_2020, b'a', b'z' + 1) | equal(x, b'_')
 }

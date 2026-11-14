@@ -17,6 +17,10 @@ pub enum Shell {
 
 impl Shell {
 	/// Render completion scripts to stdout for the selected shell.
+	///
+	/// # Errors
+	///
+	/// Returns an error if writing the generated script to standard output fails.
 	pub fn generate_completions(self) -> io::Result<()> {
 		let mut cmd = Cli::command();
 		let bin_name = cmd.get_name().to_string();

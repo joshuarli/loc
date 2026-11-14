@@ -81,11 +81,17 @@ struct Entry<'a> {
 	object: &'a [u8],
 }
 
-/// Count the files git tracks under `root` in `snapshot`, with the walk's filters: exclusions, hidden files, depth and languages. `.gitignore` doesn't apply, since a tracked file is part of the repository whatever its patterns say. Symlinks aren't counted, nor are submodules unless asked for, since a revision's submodule contents aren't in this repository.
+/// Count the files git tracks under `root` in `snapshot`, with the walk's filters: exclusions, hidden files, depth and languages.
+///
+/// `.gitignore` doesn't apply, since a tracked file is part of the repository whatever its patterns say. Symlinks aren't counted, nor are submodules unless asked for, since a revision's submodule contents aren't in this repository.
 ///
 /// # Errors
 ///
 /// Returns an error if git isn't installed, `root` isn't in a repository, or the revision doesn't exist.
+///
+/// # Panics
+///
+/// Panics if a counting thread panics.
 pub fn count_snapshot(
 	root: &Path,
 	snapshot: &Snapshot,

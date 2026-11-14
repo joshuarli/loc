@@ -7,11 +7,10 @@ channel = "github-release-file"
 name    = "trypsynth/codestats"
 version = "1.1.0"
 
-# Release binaries are built with PGO, and a build from crates.io isn't. A release file is named per system, not per architecture, so these are the ones linebench runs on most.
+Containers and release archives carry these binaries; Linux ARM64 uses the musl build and macOS uses the Apple Silicon build.
 [acquisition.file]
-linux   = "cs-x86_64-unknown-linux-gnu"
+linux   = "cs-x86_64-unknown-linux-musl-static"
 macos   = "cs-aarch64-apple-darwin"
-windows = "cs-x86_64-pc-windows-gnu.exe"
 
 [run]
 args           = ["{target}"]

@@ -43,8 +43,6 @@ pub(super) struct Entry {
 	path: PathBuf,
 	file_type: FileType,
 	depth: usize,
-	#[cfg(windows)]
-	hidden_attribute: bool,
 }
 
 impl Entry {
@@ -54,13 +52,7 @@ impl Entry {
 
 	fn from_path(path: PathBuf, depth: usize) -> Result<Self, Error> {
 		match fs::metadata(&path) {
-			Ok(metadata) => Ok(Self {
-				file_type: metadata.file_type(),
-				depth,
-				#[cfg(windows)]
-				hidden_attribute: has_hidden_attribute(&metadata),
-				path,
-			}),
+			Ok(metadata) => Ok(Self { file_type: metadata.file_type(), depth, path }),
 			Err(err) => Err(io_error(err, path)),
 		}
 	}
@@ -68,12 +60,6 @@ impl Entry {
 	fn is_dir(&self) -> bool {
 		self.file_type.is_dir()
 	}
-}
-
-#[cfg(windows)]
-fn has_hidden_attribute(metadata: &fs::Metadata) -> bool {
-	const FILE_ATTRIBUTE_HIDDEN: u32 = 2;
-	std::os::windows::fs::MetadataExt::file_attributes(metadata) & FILE_ATTRIBUTE_HIDDEN != 0
 }
 
 fn io_error(err: io::Error, path: PathBuf) -> Error {
@@ -217,8 +203,8 @@ where
 			}
 		}
 		let rules = parent_rules.for_child(&dir.path, &found, shared, self.pool.follow_links);
-		for (path, file_type, attribute) in entries {
-			self.queue(&rules, dir.depth + 1, path, file_type, attribute);
+		for (path, file_type) in entries {
+			self.queue(&rules, dir.depth + 1, path, file_type);
 		}
 	}
 
@@ -229,7 +215,6 @@ where
 		depth: usize,
 		path: PathBuf,
 		file_type: io::Result<FileType>,
-		attribute: bool,
 	) {
 		// Git's own directory is never source, even when hidden files are counted.
 		if rules::listed_name(&path) == b".git" {
@@ -258,20 +243,9 @@ where
 			}
 			entry
 		} else {
-			#[cfg(windows)]
-			let entry = Entry { path, file_type, depth, hidden_attribute: attribute };
-			#[cfg(not(windows))]
-			let entry = {
-				let _ = attribute;
-				Entry { path, file_type, depth }
-			};
-			entry
+			Entry { path, file_type, depth }
 		};
-		#[cfg(windows)]
-		let hidden_attribute = entry.hidden_attribute;
-		#[cfg(not(windows))]
-		let hidden_attribute = false;
-		if rules.skips(&entry.path, entry.is_dir(), hidden_attribute, self.pool.shared) {
+		if rules.skips(&entry.path, entry.is_dir(), self.pool.shared) {
 			return;
 		}
 		if entry.is_dir() {
@@ -382,13 +356,9 @@ impl<V, F> Drop for Worker<'_, '_, '_, V, F> {
 	}
 }
 
-/// A directory entry's type, and on Windows, whether its attributes hide it. Both come with the directory listing, so they cost no `stat`.
-fn entry_parts(entry: &fs::DirEntry, path: PathBuf) -> (PathBuf, io::Result<FileType>, bool) {
-	#[cfg(windows)]
-	let attribute = entry.metadata().is_ok_and(|metadata| has_hidden_attribute(&metadata));
-	#[cfg(not(windows))]
-	let attribute = false;
-	(path, entry.file_type(), attribute)
+/// A directory entry's type. It comes with the directory listing, so it costs no `stat`.
+fn entry_parts(entry: &fs::DirEntry, path: PathBuf) -> (PathBuf, io::Result<FileType>) {
+	(path, entry.file_type())
 }
 
 /// An error if a directory a link leads to is one of the directories above the link.

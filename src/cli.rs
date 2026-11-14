@@ -173,6 +173,12 @@ pub struct FormatArgs {
 }
 
 impl Cli {
+	/// Parse the command line and the arguments clap matched, together.
+	///
+	/// # Panics
+	///
+	/// Panics if arguments that clap validated fail to convert; unreachable for parser-produced arguments.
+	#[must_use]
 	pub fn parse_with_matches() -> (Self, ArgMatches) {
 		let command = Self::command();
 		let matches = command.get_matches();
@@ -339,7 +345,6 @@ mod tests {
 		let (args, matches) = parse_cli(&["cs"]);
 		let merged = merge_config(config, &args, &matches).expect("merge config");
 		let parent = config_path.parent().expect("config parent");
-		// On Windows, a path that starts with a slash stays on the config's drive.
 		let rooted = PathBuf::from("/abs");
 		assert_eq!(merged.paths, [parent.join("src"), parent.join(rooted)]);
 	}

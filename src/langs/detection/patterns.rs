@@ -22,6 +22,7 @@ impl BestMatches {
 
 /// Find the candidate languages for a filename, keeping only those matched by the most specific pattern (`*.blade.php` over `*.php`, `pom.xml` over `*.xml`), where a pattern is as specific as it has literal characters and an exact filename beats the rest. Exact filenames and prefixes (`Kconfig.*`) match case-sensitively, so `BUILD` doesn't claim a `build` script, and extensions don't. Candidates are returned in language order.
 #[inline]
+#[must_use]
 pub fn get_candidates(filename: &str) -> Vec<&'static Language> {
 	let mut best = BestMatches { specificity: 0, langs: Vec::new() };
 	if let Some(langs) = FILENAMES.get(filename) {

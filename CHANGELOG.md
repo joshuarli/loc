@@ -3,7 +3,11 @@
 ## Unreleased
 
 - Breaking: removed the `csv`, `tsv`, `markdown`, and `html` output formats; `cs` reports as text or JSON only
-- Breaking: musl static builds no longer use mimalloc and link with the system allocator
+- Breaking: removed support for Windows; releases ship statically linked musl binaries for Linux (x86_64 and ARM64) and a macOS Apple Silicon build
+- Breaking: GitHub prereleases replace the rolling Nightly Build release; each dispatch of the release workflow publishes a prerelease tagged `release-<sha>` with a `SHA256SUMS` file
+- Release binaries are no longer built with profile-guided optimization; releases use the new `dist` profile (fat LTO, one codegen unit, stripped), and `cargo build --release` now uses thin LTO
+- musl static builds no longer use mimalloc and link with the system allocator
+- Added a rustybench benchmark suite with a committed baseline; compare with `make bench`
 
 ## 1.1.1
 

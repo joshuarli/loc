@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Benchmarks codestats against mezura, tokei, scc, and gocloc on pinned commits of public repositories and prints the README tables.
 # Needs git, hyperfine, jq, and the other tools on PATH. Usage: CS=<release binary> scripts/bench.sh [clone directory]
-# Without CS, it builds the binary with cargo, which leaves out the release's PGO and so isn't what users download.
+# Without CS, it builds the binary with cargo, which uses thin link-time optimization and so isn't quite what users download.
 
 repos=(
 	"BurntSushi/ripgrep 91f5d22ef48bde459d90a8c7dbeab416e97d0f2b"
