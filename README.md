@@ -20,7 +20,7 @@ codestats counts the code, comment, blank, and shebang lines in a codebase by la
 - Reads the linguist attributes in `.gitattributes` files, the same way GitHub does.
 - Filters by language, glob pattern, and directory depth.
 - Shows counts per file or per directory.
-- Recognizes more than 770 languages.
+- Recognizes 775 languages.
 - Handles UTF-8, UTF-16, and legacy text encodings.
 
 ## Install
@@ -54,23 +54,7 @@ sudo mv cs-* /usr/local/bin/cs
 cargo install codestats
 ```
 
-This requires Rust 1.88 or later. The minimum Rust version only increases in minor releases, never in patch releases.
-
-### Build from source
-
-```bash
-git clone https://github.com/trypsynth/codestats
-cd codestats
-cargo install --path .
-```
-
-`cs --version` reports the commit the binary was built from, embedded at build time. Building outside a git checkout, for example from a source archive, requires the commit id to be set explicitly:
-
-```bash
-CODESTATS_BUILD_SHA=<7 to 40 digit commit id> cargo install --path .
-```
-
-If neither a git checkout nor a Cargo archive is available and `CODESTATS_BUILD_SHA` isn't set, the build fails with an error rather than embedding a wrong commit.
+This requires Rust 1.88 or later. Release binaries are built with the `dist` profile, so a binary downloaded from the releases page is the fastest option. The minimum Rust version only increases in minor releases, never in patch releases.
 
 ## Quick start
 
@@ -123,7 +107,6 @@ cs --symlinks -H                                 # follow symbolic links, includ
 cs --no-gitignore                                # include files .gitignore excludes
 cs -D                                            # counts by directory
 cs langs                                         # list supported languages
-cs completions bash                              # shell completions
 ```
 
 ## Output formats
@@ -214,7 +197,6 @@ If you don't give a path, codestats counts the current directory. If the path is
 
 - `diff <FROM> [PATH]`: compare counts by language between a git revision and the working tree, or another revision with `--to <REV>`.
 - `langs`: list the supported languages.
-- `completions <shell>`: generate shell completions, for example for `bash`, `zsh`, or `fish`.
 - `init`: write a configuration file that lists every setting.
 
 ## Configuration
@@ -416,32 +398,6 @@ Median peak memory:
 Each tool ran 20 times, or 10 times for rust and linux, in rounds of two runs per tool. The tools' order flips each round, with a pause between rounds, so a processor that slows down as it heats up doesn't favor one tool.
 
 To reproduce these tables, run `CS=path/to/cs scripts/bench.sh`, which pins each repository's commit. It uses hyperfine 2.0.0 and these tools: mezura 3.5.0, tokei 15.0.0, scc 4.1.0, and gocloc 0.7.0.
-
-## Development
-
-Use the toolchain pinned in [rust-toolchain.toml](rust-toolchain.toml).
-The [Makefile](Makefile) drives the common tasks:
-
-```sh
-make build         # cargo build
-make test          # the test suite
-make check         # clippy with -D warnings, plus tests
-make lint          # check, plus ruff on scripts
-make bench         # compare the benchmark suite against benches/baseline.json
-make release TARGET=x86_64-unknown-linux-musl   # the static dist binary
-make verify-release TARGET=x86_64-unknown-linux-musl
-```
-
-Keep scratch files under the ignored `.work/` directory:
-`TMPDIR="$PWD/.work/tmp" make test`.
-
-Linux release binaries are built with `-Z build-std` in a pinned Alpine
-container ([Dockerfile](Dockerfile)), and `make verify-release` checks their ELF
-linking. `make install` installs the dist binary to `~/.local/bin`.
-
-Prereleases are cut by dispatching the `release` workflow on the default
-branch. Each dispatch publishes an archive per platform with a `SHA256SUMS`
-file; verify an archive after downloading with `sha256sum -c`.
 
 ## License
 
