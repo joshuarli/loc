@@ -22,6 +22,21 @@ if [[ -z $cs ]]; then
 	cargo build --release --quiet --manifest-path "$root/Cargo.toml" || exit 1
 	cs=$root/target/release/cs
 fi
+# Record what was measured: each tool's path, hash and version, so a number can be traced to a build.
+{
+	echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+	echo "host: $(uname -smo)"
+	for tool in "${tools[@]}"; do
+		bin=$tool
+		[[ $tool == codestats ]] && bin=$cs
+		path=$(command -v "$bin") || { echo "tool missing: $tool" >&2; exit 1; }
+		version=$("$bin" --version 2>&1 | head -1)
+		if command -v shasum >/dev/null; then hash=$(shasum -a 256 "$path" | cut -d' ' -f1); else hash=$(sha256sum "$path" | cut -d' ' -f1); fi
+		printf '%s\t%s\t%s\t%s\n' "$tool" "$path" "$hash" "$version"
+	done
+	echo "codestats: $root at $(git -C "$root" rev-parse HEAD) (release profile, see Cargo.toml)"
+} >"$dir/results/environment.txt"
+echo "Recorded tool versions and hashes in $dir/results/environment.txt" >&2
 
 for entry in "${repos[@]}"; do
 	read -r repo sha <<<"$entry"
@@ -31,6 +46,11 @@ for entry in "${repos[@]}"; do
 		# Fetching just the pinned commit keeps the rust and linux checkouts to a fraction of a full clone.
 		git init -q "$dir/$name" && git -C "$dir/$name" fetch -q --depth 1 "https://github.com/$repo" "$sha" &&
 			git -C "$dir/$name" checkout -q FETCH_HEAD || exit 1
+	else
+		# A reused checkout is only a baseline at the pinned revision with a clean tree; anything else is not the corpus these numbers describe.
+		actual=$(git -C "$dir/$name" rev-parse HEAD 2>/dev/null) || { echo "$dir/$name: not a git checkout; remove it and rerun" >&2; exit 1; }
+		[[ $actual == "$sha" ]] || { echo "$dir/$name: at $actual, expected $sha; remove it and rerun" >&2; exit 1; }
+		[[ -z $(git -C "$dir/$name" status --porcelain) ]] || { echo "$dir/$name: worktree is dirty; remove it and rerun" >&2; exit 1; }
 	fi
 	rounds=10
 	[[ $name == linux || $name == rust ]] && rounds=5

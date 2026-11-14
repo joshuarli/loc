@@ -7,6 +7,7 @@
 use std::{
 	fmt::Write as _,
 	fs,
+	io::Write as _,
 	path::{Path, PathBuf},
 	time::{SystemTime, UNIX_EPOCH},
 };
@@ -46,6 +47,17 @@ impl Drop for BenchDir {
 /// A tree of generated Rust files with comments, strings, and raw strings, the shape of a real source tree.
 fn generated_corpus(label: &str) -> BenchDir {
 	let corpus = BenchDir::new(label);
+	let body = rust_body();
+	for n in 0..800 {
+		let dir = corpus.path().join(format!("src/mod{}", n % 10));
+		fs::create_dir_all(&dir).unwrap();
+		fs::write(dir.join(format!("file_{n}.rs")), &body).unwrap();
+	}
+	corpus
+}
+
+/// A Rust source body with comments, strings and raw strings, the shape of a real source file.
+fn rust_body() -> String {
 	let mut body = String::new();
 	for i in 0..40 {
 		writeln!(body, "fn function_{i}(value: &str) -> usize {{").unwrap();
@@ -55,12 +67,14 @@ fn generated_corpus(label: &str) -> BenchDir {
 		writeln!(body, "\tvalue.len() + s.len() + raw.len()").unwrap();
 		writeln!(body, "}}").unwrap();
 	}
-	for n in 0..800 {
-		let dir = corpus.path().join(format!("src/mod{}", n % 10));
-		fs::create_dir_all(&dir).unwrap();
-		fs::write(dir.join(format!("file_{n}.rs")), &body).unwrap();
-	}
-	corpus
+	body
+}
+
+/// About 256 KiB of Rust: the body repeated, still valid source, all one module's worth of items.
+fn large_rust() -> Vec<u8> {
+	let body = rust_body();
+	let repeat = (256usize * 1024).div_ceil(body.len());
+	body.repeat(repeat).into_bytes()
 }
 
 fn fixtures() -> PathBuf {
@@ -82,6 +96,62 @@ fn count_generated_corpus(bencher: Bencher) {
 fn count_fixtures(bencher: Bencher) {
 	let root = fixtures();
 	bencher.bench_local(|| black_box(count(&root)));
+}
+
+#[rustybench::bench]
+fn count_rust_in_memory(bencher: Bencher) {
+	let bytes = large_rust();
+	// Warm the lazy per-language matchers before the measured loop, so first-use is not charged to steady-state scanning.
+	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+}
+
+#[rustybench::bench]
+fn detect_and_count_rust_in_memory(bencher: Bencher) {
+	let bytes = large_rust();
+	let name = Path::new("bench.rs");
+	black_box(codestats::analysis::bench::detect_and_count(name, &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::detect_and_count(name, &bytes)));
+}
+
+#[rustybench::bench]
+fn count_blank_heavy_in_memory(bencher: Bencher) {
+	// Mostly-newline input: exercises the blank-line accounting in the mask sweep.
+	let bytes = b"\n\n\n\nfn f() {}\n\n\n\nlet x = 1;\n\n\n\n".repeat(8 * 1024);
+	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+}
+
+#[rustybench::bench]
+fn count_minified_in_memory(bencher: Bencher) {
+	// One long line with dense punctuation: no newlines, markers every few bytes.
+	let mut bytes = Vec::with_capacity(128 * 1024);
+	while bytes.len() < 128 * 1024 {
+		bytes.extend_from_slice(b"var x={a:1,b:\"s\",c:[1,2,3]};function f(){return x.a+`t${x.b}u`}");
+	}
+	black_box(codestats::analysis::bench::count_as("JavaScript", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("JavaScript", &bytes)));
+}
+
+#[rustybench::bench]
+fn count_non_ascii_in_memory(bencher: Bencher) {
+	// Multi-byte UTF-8 throughout, including inside comments and strings.
+	let line = "// αβγδ εζηθ -> 'λ' + \"μνξο\" = π\nlet σύμβολο = \"αβγδ\";\n\n";
+	let bytes = line.repeat(8 * 1024).into_bytes();
+	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+}
+
+#[rustybench::bench]
+fn count_json_in_memory(bencher: Bencher) {
+	let mut bytes = Vec::with_capacity(256 * 1024);
+	let mut n = 0u64;
+	while bytes.len() < 256 * 1024 {
+		n += 1;
+		writeln!(bytes, "{{\"key{n}\": [{n}, \"value{n}\", true, null], \"other\": {{\"nested\": \"αβ\"}}}},").unwrap();
+	}
+	black_box(codestats::analysis::bench::count_as("JSON", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("JSON", &bytes)));
 }
 
 #[rustybench::bench]

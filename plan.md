@@ -17,7 +17,17 @@ or tracking framework. Mark an experiment accepted or rejected with a short
 result and a reproducible evidence path. Rejected experiments are useful results;
 remove their production code rather than accumulating alternate engines.
 
-- [ ] P0 — Establish trustworthy parser, process, and real-tree baselines.
+- [x] P0 — Establish trustworthy parser, process, and real-tree baselines.
+  - 2026-11-13, Apple M5 Max (arm64, macOS 27), pinned toolchain, release profile. Committed: bench seam `analysis::bench`
+    (doc-hidden, crate-private use), in-memory workloads in `benches/bench.rs`, real-process driver `scripts/bench-process.sh`,
+    `scripts/costs.py` now fails on a candidate missing a language instead of scoring it zero, and `scripts/bench.sh` verifies
+    each reused corpus checkout's revision and clean tree and records tool paths/hashes/versions in `results/environment.txt`.
+  - Warm in-memory (`cargo bench --bench bench`, 100 iterations): rust ~256 KiB 188 µs (~1.4 GB/s), blank-heavy ~26 µs,
+    minified JS 128 KiB ~110 µs, non-ASCII ~580 µs, JSON ~28 µs; detection+counting vs counting-only is within noise
+    (~1-2 µs). `count_fixtures` 2.84 ms, `count_generated_corpus` 19.2 ms. Process (`scripts/bench-process.sh`, hyperfine,
+    release binary): empty 4.9 ms, one file 4.8 ms, fixtures 8.1 ms, generated-800 12.3 ms; peak RSS 3.2-9.0 MiB.
+  - `scripts/costs.py` needs Linux perf; not run here (unavailable). `scripts/bench.sh` corpus download not run (network,
+    and competitors mezura/tokei/scc/gocloc are not installed); Linux/aarch64-musl qualification unrun — reported, not claimed.
 - [ ] P1 — Compact immutable scan plans and matcher storage.
 - [ ] P2 — Reuse masks and candidate positions across the slow-path boundary.
 - [ ] P3 — Compact lexical state and a few count-only scanner families.

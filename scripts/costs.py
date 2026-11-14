@@ -3,7 +3,10 @@
 
 Work is counted in user-space instructions (`perf stat -e instructions:u`), which barely vary between runs, unlike wall time.
 A language's cost in a repository is the instructions for counting only that language (`-L`) minus those for a run that
-counts nothing, which walks the same tree and detects the same languages.
+counts nothing, which walks the same tree and detects the same languages. That subtraction is a work estimate, not a clean
+parser-time measurement: files its only candidate is filtered out are rejected before the scanner runs, so use the in-memory
+benchmarks (`cargo bench --bench bench`) or real phase attribution for parser claims. A language missing from a candidate's
+detection report means the comparison cannot be made and is treated as a failure, never as zero work.
 
     scripts/costs.py measure BINARY DIR... [--out FILE]   per-language costs, as a table and optionally JSON
     scripts/costs.py compare BASE CANDIDATE DIR...         where CANDIDATE does more work than BASE
@@ -50,7 +53,9 @@ def measure(binary, directory, runs=3):
 	"""Per-language costs in one repository: {language: {bytes, lines, files, instructions}}, plus the total and the walk."""
 	total, report = least(binary, directory, runs=runs)
 	present = {language["name"] for language in report["languages"]}
-	absent = next(name for name in ABSENT if name not in present)
+	absent = next((name for name in ABSENT if name not in present), None)
+	if absent is None:
+		raise SystemExit(f"{directory}: no absent marker language available for a walk baseline; extend ABSENT")
 	walk, _ = least(binary, directory, "-L", absent, runs=runs)
 	costs = {}
 	for language in report["languages"]:
@@ -113,8 +118,11 @@ def compare(base, candidate, directories, threshold):
 		repo = Path(directory).name
 		print(f"comparing {repo}", file=sys.stderr)
 		old, new = measure(base, directory), measure(candidate, directory)
+		missing = [name for name in old["languages"] if name not in new["languages"]]
+		if missing:
+			raise SystemExit(f"{repo}: candidate's report is missing {', '.join(sorted(missing))}; refusing to treat absent languages as zero work")
 		pairs = [("(total)", old["total"], new["total"])]
-		pairs += [(name, cost["instructions"], new["languages"].get(name, {}).get("instructions", 0)) for name, cost in old["languages"].items()]
+		pairs += [(name, cost["instructions"], new["languages"][name]["instructions"]) for name, cost in old["languages"].items()]
 		for name, before, after in pairs:
 			change = (after - before) / before if before else 0
 			flagged = change > threshold and after - before > NOISE
