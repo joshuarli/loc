@@ -14,6 +14,9 @@ RUN apk add --no-cache \
     make=4.4.1-r4 \
     musl-dev=1.2.6-r3
 
+# The workspace is mounted at /loc at run time and owned by the host user; git refuses to read it as dubious otherwise.
+RUN git config --system --add safe.directory /loc
+
 ARG RUSTUP_VERSION=1.29.1
 ARG RUSTUP_X86_64_SHA256=331228566cc931f32cd684f9bebc5956a5e5d7394c8d5de595f196a658ab98e6
 ARG RUSTUP_AARCH64_SHA256=1ddf36182ac5d1782dbeefcb9bea7f5f9412d88f4a0d5047b1564a223624e8c6
