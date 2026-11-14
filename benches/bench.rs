@@ -28,7 +28,9 @@ struct BenchDir(PathBuf);
 impl BenchDir {
 	fn new(label: &str) -> Self {
 		let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-		let path = std::env::temp_dir().join(format!("codestats-bench-{label}-{}-{stamp}", std::process::id()));
+		let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(".work").join("bench");
+		fs::create_dir_all(&root).unwrap();
+		let path = root.join(format!("codestats-bench-{label}-{}-{stamp}", std::process::id()));
 		fs::create_dir_all(&path).unwrap();
 		Self(path)
 	}
