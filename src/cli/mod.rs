@@ -22,7 +22,7 @@ pub const BIN: &str = "loc";
 
 /// The specification of the main command, shared with the help renderer and the completion generators.
 pub static ROOT_SPEC: CommandSpec = CommandSpec {
-	description: "A tool for analyzing code statistics across different programming languages",
+	description: "Count code, comment, blank, and shebang lines by language, as text or JSON",
 	options: &[
 		analyze::CONFIG,
 		analyze::NO_CONFIG,

@@ -39,7 +39,7 @@ sha256sum -c SHA256SUMS --ignore-missing
 | Linux ARM64, static (musl) | `loc-aarch64-unknown-linux-musl-static.zip` |
 | macOS Apple Silicon | `loc-aarch64-apple-darwin.zip` |
 
-The static Linux binaries run on any Linux, including Alpine. Windows is no longer supported.
+The static Linux binaries run on any Linux, including Alpine. Windows is not supported.
 
 On Linux and macOS, make the binary executable and move it to a directory on your `PATH`:
 
@@ -335,7 +335,7 @@ To run LineJudge locally:
 
 ## Benchmarks
 
-All times are for files already in the file cache, on an AMD Ryzen 7 PRO 5850U (8 cores, 16 threads) with 32 GB of RAM. They use the x86-64 Linux glibc binary that CI built at commit `d3c937a`. Releases no longer ship glibc builds; the closest current build is the x86-64 musl static binary.
+All times are for files already in the file cache, on an AMD Ryzen 7 PRO 5850U (8 cores, 16 threads) with 32 GB of RAM. The loc numbers were measured with the x86-64 glibc binary built at commit `d3c937a`; current releases ship a musl static binary instead.
 
 ### Equal work
 
