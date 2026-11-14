@@ -6,7 +6,7 @@
 //!
 //! 1. File pattern matching: Match filename against patterns (e.g., `*.rs` = Rust and `CMakeLists.txt` = `CMake`).
 //! 2. Disambiguation: When multiple languages match, use file content analysis. Check for shebang lines and score based on comment style matches and keyword occurrences.
-//! 3. Specialized handling: Symbol-only languages such as Brainfuck use custom detection to avoid being detected as B overly permissivly.
+//! 3. Specialized handling: Symbol-only languages use custom detection to avoid false positives from their keywords.
 //!
 //! ## Language Definitions
 //!
@@ -76,8 +76,8 @@ mod tests {
 	#[test]
 	fn get_candidates_matches_exact_filenames_case_sensitively() {
 		assert!(!get_candidates("MAKEFILE").iter().any(|lang| lang.name == "Makefile"));
-		// Bazel's `BUILD` must not claim an ordinary `build` script.
-		assert!(!get_candidates("build").iter().any(|lang| lang.name == "Bazel"));
+		// No language claims an ordinary lowercase `build` script.
+		assert!(get_candidates("build").is_empty());
 	}
 
 	#[test]

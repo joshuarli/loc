@@ -643,7 +643,7 @@ mod tests {
 			}
 			checked += 1;
 		}
-		assert!(checked > 50, "only {checked} languages");
+		assert!(checked > 40, "only {checked} languages");
 	}
 }
 

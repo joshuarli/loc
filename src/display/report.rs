@@ -405,7 +405,7 @@ mod tests {
 	fn min_lines_applies_before_top_languages() {
 		let mut results = AnalysisResults::default();
 		// Alphabetically, the two smallest languages come first.
-		for (name, lines) in [("Ada", 1), ("C", 2), ("Go", 100), ("Python", 100), ("Rust", 100), ("Zig", 100)] {
+		for (name, lines) in [("AWK", 1), ("C", 2), ("Go", 100), ("Python", 100), ("Rust", 100), ("Zig", 100)] {
 			let lang = crate::langs::LANGUAGES.iter().find(|l| l.name == name).unwrap();
 			results.add_file(lang, LineCounts { total: lines, code: lines, ..LineCounts::default() }.into(), 10, None);
 		}

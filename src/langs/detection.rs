@@ -34,7 +34,7 @@ pub fn detect_language(candidates: &[&'static Language], content: Option<&str>) 
 	let decided = |language| Detection { language, close_call: false };
 	match candidates.len() {
 		0 => decided(content.and_then(detect_from_shebang)),
-		// A shebang claims a file only where the extension's language says it may (BRLTTY's `latex-access.ctb` is Python); elsewhere a shebang atop, say, a `.cxx` lexer test or a dpatch `.patch` doesn't change what the file is.
+		// A shebang claims a file only where the extension's language says it may; elsewhere a shebang atop, say, a `.cxx` lexer test doesn't change what the file is.
 		1 if candidates[0].shebang_overrides => decided(content.and_then(detect_from_shebang).or(Some(candidates[0]))),
 		// A language that always needs keyword evidence is held to it even alone on its pattern.
 		1 if candidates[0].require_keywords != RequireKeywords::Always => decided(Some(candidates[0])),
@@ -50,7 +50,7 @@ pub fn detect_language(candidates: &[&'static Language], content: Option<&str>) 
 			}
 			let (language, margin) = disambiguate(candidates, file_content);
 			let default = default_candidate(candidates);
-			// Only a narrow win for something other than the default (LPC or Objective-C over C) is worth a closer look; a narrow win for the default is the expected answer.
+			// Only a narrow win for something other than the default (Objective-C over C) is worth a closer look; a narrow win for the default is the expected answer.
 			let surprising = language.is_none() || language.map(|l| l.index) != default.map(|l| l.index);
 			Detection { language: language.or(default), close_call: margin < DECISIVE_MARGIN && surprising }
 		}
@@ -109,7 +109,6 @@ mod tests {
 	#[case::bare_header_defaults_to_c("empty.h", "#pragma once\n", "C")]
 	#[case::executable_contraction_table("latex-access.ctb", "#!/usr/bin/python3\nimport sys\n", "Python")]
 	#[case::shebang_atop_a_lexer_test("x.cxx", "#!/usr/bin/env node\nint main() {}\n", "C++")]
-	#[case::dpatch("01-fix.patch", "#! /bin/sh /usr/share/dpatch/dpatch-run\n--- a/x\n+++ b/x\n", "Diff")]
 	#[case::c_header_comments_only("util.h", "// helpers\n/* nothing here */\n", "C")]
 	#[case::octave_function("example.m", "# compute\nfunction y = f(x)\n\ty = x;\nendfunction\n", "Octave")]
 	fn detect_m_and_h_files(#[case] filename: &str, #[case] content: &str, #[case] expected: &str) {
@@ -125,14 +124,14 @@ mod tests {
 
 	#[rstest]
 	#[case::longer_extension("layout.blade.php", "Blade")]
-	#[case::exact_filename("pom.xml", "Maven")]
+	#[case::exact_filename("CMakeLists.txt", "CMake")]
 	fn most_specific_pattern_wins(#[case] filename: &str, #[case] expected: &str) {
 		assert_eq!(detect_language_info(filename, Some("")).map(|l| l.name), Some(expected));
 	}
 
 	#[test]
 	fn repeated_identifier_does_not_make_c_lpc() {
-		// CPython's C API talks about the mapping protocol constantly; that shouldn't make a C file LPC.
+		// CPython's C API talks about the mapping protocol constantly; that shouldn't make a C file anything else.
 		let content = format!(
 			"#include \"Python.h\"\n\nstatic PyObject *\nf(PyObject *self)\n{{\n{}    return NULL;\n}}\n",
 			"    PyMapping_Check(mapping);\n".repeat(40)
@@ -142,18 +141,16 @@ mod tests {
 
 	#[test]
 	fn inc_without_keywords_is_unrecognized() {
-		// A kbd keymap: its `#` comments alone shouldn't make it BitBake.
+		// A kbd keymap: its `#` comments alone shouldn't make it anything else.
 		let content = "# Common keys\nkeycode 1 = Escape\nkeycode 2 = one exclam\n";
 		assert!(detect_language_info("qwerty-layout.inc", Some(content)).is_none());
 	}
 
 	#[rstest]
-	#[case::rpm_spec("kernel.spec", "Name: kernel\n%description\nThe Linux kernel.\n", Some("RPM Spec"))]
 	#[case::erlang_test_spec("emulator.spec", "{suites,\"../emulator_test\",all}.\n", None)]
-	#[case::systemd_target("multi-user.target", "[Unit]\nDescription=Multi-User System\n", Some("systemd"))]
 	#[case::makefile_target("Makefile.target", "obj-y += hid.o\n", None)]
 	#[case::pickle_data("randv3.pck", "(lp0\nI-2147483648\n", None)]
-	fn always_required_keywords_hold_alone(#[case] name: &str, #[case] content: &str, #[case] expected: Option<&str>) {
+	fn always_required_keywords_alone(#[case] name: &str, #[case] content: &str, #[case] expected: Option<&str>) {
 		assert_eq!(detect_language_info(name, Some(content)).map(|language| language.name), expected);
 	}
 
@@ -167,28 +164,6 @@ mod tests {
 	fn detect_language_info_skips_when_no_signal() {
 		let language = detect_language_info("ambiguous.m", Some("plain text without hints"));
 		assert!(language.is_none());
-	}
-
-	#[test]
-	fn detect_brainfuck_with_ascii_comments() {
-		let content =
-			"This is a comment\n++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.\nMore comments here\n>+++.\n";
-		let language = detect_language_info("example.bf", Some(content)).unwrap();
-		assert_eq!(language.name, "Brainfuck");
-	}
-
-	#[test]
-	fn detect_b_over_brainfuck() {
-		let content = "/* B language */\nmain $(\nauto i;\ni = 0;\nwhile (i < 10) i++;$)";
-		let language = detect_language_info("example.b", Some(content)).unwrap();
-		assert_eq!(language.name, "B");
-	}
-
-	#[test]
-	fn detect_b_with_many_comparison_operators() {
-		let content = "main $(\n   auto ch;\n   if (ch > 0100 & ch < 0133) ch = ch + 040;\n   if (ch > 500 & ch < 600) goto loop;\n$)";
-		let language = detect_language_info("example.b", Some(content)).unwrap();
-		assert_eq!(language.name, "B");
 	}
 
 	#[test]

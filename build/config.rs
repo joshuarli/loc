@@ -115,7 +115,6 @@ pub enum Embedding {
 	Astro,
 	Markdown,
 	AsciiDoc,
-	Org,
 	ReStructuredText,
 	Php,
 }

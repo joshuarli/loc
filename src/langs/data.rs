@@ -9,8 +9,6 @@ pub enum Embedding {
 	Markdown,
 	/// `[source,python]` listing blocks, and fenced code blocks.
 	AsciiDoc,
-	/// `#+BEGIN_SRC python` blocks.
-	Org,
 	/// `.. code-block:: python` directives.
 	ReStructuredText,
 	/// HTML outside `<?php ... ?>` tags, with HTML's own elements inside it.
@@ -24,7 +22,7 @@ pub enum RequireKeywords {
 	Never,
 	/// Where the file's pattern is shared with other languages (C++ for a `.h`), but not for its own (`.cpp`).
 	Shared,
-	/// Even for a pattern only this language has, which others' files often use too (RPM Spec's `.spec`).
+	/// Even for a pattern only this language has, which others' files often use too (PL/SQL's `.pck`).
 	Always,
 }
 

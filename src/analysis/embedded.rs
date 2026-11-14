@@ -108,8 +108,6 @@ enum End {
 	Fence { marker: u8, len: usize },
 	/// A line of exactly `len` `marker`s, like the `----` that opened an `AsciiDoc` listing.
 	Delimiter { marker: u8, len: usize },
-	/// Org's `#+END_SRC`.
-	OrgSource,
 	/// A line indented no deeper than a reStructuredText directive, which isn't part of the region but follows it. Until the code starts, `preamble` is set: the directive's options (`:linenos:`) and the blank line after them are the host's. `blanks` counts the blank lines since the last line of code, which only belong to the region if more code follows.
 	Dedent { indent: usize, preamble: bool, blanks: u64 },
 }
@@ -125,7 +123,6 @@ impl End {
 				let line = line.trim_end();
 				line.len() == len && line.bytes().all(|b| b == marker)
 			}
-			Self::OrgSource => starts_with_ignore_case(line.trim_start().as_bytes(), b"#+end_src"),
 			Self::Dedent { indent, .. } => !is_blank(line.as_bytes()) && indentation(line) <= indent,
 		}
 	}
@@ -318,8 +315,6 @@ impl<'a> Classifier<'a> {
 				}
 				(embedding == Embedding::AsciiDoc).then(|| source_attribute(line)).flatten()
 			}
-			Embedding::Org => starts_with_ignore_case(trimmed.as_bytes(), b"#+begin_src")
-				.then(|| embedded(info_language(trimmed["#+begin_src".len()..].trim()), End::OrgSource)),
 			Embedding::ReStructuredText => [".. code-block::", ".. code::", ".. sourcecode::"]
 				.into_iter()
 				.find_map(|directive| trimmed.strip_prefix(directive))
@@ -460,7 +455,6 @@ pub(super) const fn region_starts(embedding: Embedding) -> Option<RegionStarts> 
 		Embedding::Html | Embedding::Astro => None,
 		Embedding::Markdown => Some(RegionStarts::LineStart(b"`~")),
 		Embedding::AsciiDoc => Some(RegionStarts::LineStart(b"`~[")),
-		Embedding::Org => Some(RegionStarts::LineStart(b"#")),
 		Embedding::ReStructuredText => Some(RegionStarts::LineStart(b".")),
 		Embedding::Php => Some(RegionStarts::Anywhere(*b"?>")),
 	}
@@ -563,7 +557,6 @@ fn element_language(tag: Tag, attributes: &str) -> Option<&'static Language> {
 	let name = match (tag, lang.as_deref()) {
 		(Tag::Script, Some("ts" | "tsx" | "typescript")) => "TypeScript",
 		(Tag::Script, Some("js" | "jsx" | "javascript")) => "JavaScript",
-		(Tag::Script, Some("coffee" | "coffeescript")) => "CoffeeScript",
 		(Tag::Script, None) => match attribute(attributes, "type").map(str::to_ascii_lowercase).as_deref() {
 			None
 			| Some(
@@ -583,11 +576,9 @@ fn element_language(tag: Tag, attributes: &str) -> Option<&'static Language> {
 			Some(_) => return None,
 		},
 		(Tag::Style, None | Some("css")) => "CSS",
-		(Tag::Style, Some("postcss")) => "PostCSS",
 		(Tag::Style, Some("scss")) => "SCSS",
 		(Tag::Style, Some("sass")) => "Sass",
 		(Tag::Style, Some("less")) => "Less",
-		(Tag::Style, Some("stylus" | "styl")) => "Stylus",
 		_ => return None,
 	};
 	language_named(name)
@@ -692,7 +683,6 @@ mod tests {
 	#[case::rmarkdown_chunk("Markdown", "```{r setup, include=FALSE}\n# note\n```", &[Code, Comment, Code])]
 	#[case::asciidoc_listing("AsciiDoc", "[source,python]\n----\n# note\nx = 1\n----\n// c", &[Code, Code, Comment, Code, Code, Comment])]
 	#[case::asciidoc_attribute_without_block("AsciiDoc", "[source,python]\nx # y", &[Code, Code])]
-	#[case::org_source("Org", "#+begin_src python :results output\n# note\n#+END_SRC\n# c", &[Code, Comment, Code, Comment])]
 	#[case::rst_directive(
 		"reStructuredText",
 		".. code-block:: python\n   :linenos:\n\n   # note\n   x = 1\nText",
@@ -843,12 +833,6 @@ mod tests {
 				opening: vec![format!("[source,{name}]"), "----".to_string()],
 				closing: Some("----"),
 				end: End::Delimiter { marker: b'-', len: 4 },
-				indent: "",
-			},
-			Embedding::Org => Syntax {
-				opening: vec![format!("#+BEGIN_SRC {name} :results output")],
-				closing: Some("#+end_src"),
-				end: End::OrgSource,
 				indent: "",
 			},
 			Embedding::ReStructuredText => Syntax {
@@ -1010,14 +994,11 @@ mod tests {
 		for name in [
 			"JavaScript",
 			"TypeScript",
-			"CoffeeScript",
 			"JSON",
 			"CSS",
-			"PostCSS",
 			"SCSS",
 			"Sass",
 			"Less",
-			"Stylus",
 			"YAML",
 			"TOML",
 		] {

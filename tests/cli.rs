@@ -321,17 +321,17 @@ fn paths_can_come_from_standard_input() {
 #[test]
 fn a_name_only_loc_knows_keeps_its_language() {
 	let root = scratch_dir("a_name_only_loc_knows_keeps_its_language");
-	fs::write(root.join(".gitattributes"), "*.bgt linguist-language=AngelScript\n*.pp linguist-language=Rust\n")
+	fs::write(root.join(".gitattributes"), "*.svelte linguist-language=JavaScript\n*.h linguist-language=Rust\n")
 		.unwrap();
-	fs::write(root.join("game.bgt"), "void main() {}\n").unwrap();
-	fs::write(root.join("pretty.pp"), "fn main() {}\n").unwrap();
+	fs::write(root.join("main.svelte"), "<script>const answer = 42;</script>\n").unwrap();
+	fs::write(root.join("one.h"), "int answer = 42;\n").unwrap();
 	let output = loc().current_dir(&root).args(["-o", "json"]).output().unwrap();
 	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	let mut names: Vec<&str> =
 		report["languages"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap()).collect();
 	names.sort_unstable();
-	// `.bgt` is only BGT, but `.pp` is Pascal or Puppet, so the attribute decides.
-	assert_eq!(names, ["BGT", "Rust"]);
+	// `.svelte` is only Svelte, but `.h` is C or C++, so the attribute decides.
+	assert_eq!(names, ["Rust", "Svelte"]);
 }
 
 #[test]

@@ -18,7 +18,7 @@ use crate::{
 const COMMENT_MATCH_SCORE: i32 = 50;
 /// Score awarded for each keyword match when disambiguating languages.
 pub(super) const KEYWORD_MATCH_SCORE: i32 = 10;
-/// Occurrences of a single keyword that count toward the score, so one identifier repeated hundreds of times (`mapping` in a C file, scored for LPC) can't outweigh several distinct keywords.
+/// Occurrences of a single keyword that count toward the score, so one identifier repeated hundreds of times can't outweigh several distinct keywords.
 const MAX_KEYWORD_OCCURRENCES: usize = 3;
 
 /// Calculate a language match score based on comment styles and keywords found in content.
@@ -26,7 +26,7 @@ const MAX_KEYWORD_OCCURRENCES: usize = 3;
 /// The scoring algorithm works as follows:
 /// - Each matching line/block comment pattern adds 50 points
 /// - Each keyword occurrence adds 10 points
-/// - Symbol-only languages (e.g., Brainfuck) require high symbol density when alphabetic content is present
+/// - Symbol-only languages require high symbol density when alphabetic content is present
 ///
 /// This weighted scoring ensures comment patterns (strong indicators) outweigh
 /// keywords (weaker indicators that may appear as identifiers in other languages).
@@ -354,7 +354,7 @@ pub(super) fn disambiguate<'a>(candidates: &[&'a Language], content: &str) -> (O
 	let tokens = tokenize(&code, &starts, max_len);
 	let mut seen = Seen::default();
 	let mut runner_up = 0;
-	// On ties, prefer a candidate that doesn't need keyword evidence (C over C++ for a `.h`), then the one with fewer keywords, then the earliest. A language that extends another (e.g. Bison over Yacc) lists the base language's keywords plus its own, so without extension-specific keywords the base language is the better guess.
+	// On ties, prefer a candidate that doesn't need keyword evidence (C over C++ for a `.h`), then the one with fewer keywords, then the earliest. A language that extends another (e.g. C++ over C) lists the base language's keywords plus its own, so without extension-specific keywords the base language is the better guess.
 	let mut best: Option<(&'a Language, i32)> = None;
 	for lang in candidates {
 		let score = score_language(lang, candidates, content, &code, &tokens, &mut seen);
@@ -669,14 +669,6 @@ mod tests {
 		let expected: Vec<_> = expected.iter().map(|token| token.as_bytes()).collect();
 		assert_eq!(tokens.words, expected);
 		assert_eq!(tokens.any, !expected.is_empty());
-	}
-
-	#[test]
-	fn is_symbol_only_language_detects_brainfuck() {
-		// Find Brainfuck in LANGUAGES
-		let bf = LANGUAGES.iter().find(|l| l.name == "Brainfuck");
-		assert!(bf.is_some());
-		assert!(is_symbol_only_language(bf.unwrap()));
 	}
 
 	#[test]

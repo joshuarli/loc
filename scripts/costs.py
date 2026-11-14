@@ -27,7 +27,7 @@ MIN_BYTES = 256 * 1024
 # Changes smaller than this, in instructions, are noise whatever their percentage.
 NOISE = 3_000_000
 # Languages that a run counting nothing can filter on, the first one absent from the repository being used.
-ABSENT = ["Brainfuck", "Befunge", "Whitespace", "LOLCODE", "Malbolge"]
+ABSENT = ["COBOL", "MATLAB", "CUDA"]
 
 
 def run(binary, directory, *args):

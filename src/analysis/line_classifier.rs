@@ -577,13 +577,6 @@ mod tests {
 		lines.iter().enumerate().map(|(i, line)| classify_line(line, lang, &mut state, i == 0)).collect()
 	}
 
-	#[test]
-	fn block_comment_only_closes_with_its_own_end() {
-		// `*)` must not close a comment opened with `{`.
-		let types = classify_all("Pascal", &["{ start", "still *) inside", "} x := 1;", "y := 2;"]);
-		assert_eq!(types, [LineType::Comment, LineType::Comment, LineType::Code, LineType::Code]);
-	}
-
 	#[rstest]
 	#[case::marker_in_string(&["let s = \"/* no\";", "x();"], &[LineType::Code, LineType::Code])]
 	#[case::escaped_quote(&["let s = \"\\\"/*\";", "x();"], &[LineType::Code, LineType::Code])]

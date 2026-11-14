@@ -33,7 +33,7 @@ pub fn is_shebang_for(line: &str, lang: &Language) -> bool {
 	!lang.shebangs.is_empty() && line.starts_with("#!") && shebang_match_len(&normalize_shebang(line), lang).is_some()
 }
 
-/// Detect a language from a shebang, preferring the longest match (`perl6` is Raku, not Perl).
+/// Detect a language from a shebang, preferring the longest match.
 #[inline]
 pub(super) fn detect_from_shebang(content: &str) -> Option<&'static Language> {
 	let trimmed = content.lines().next()?.trim();
@@ -69,7 +69,6 @@ mod tests {
 	#[case::bash("#!/bin/bash\necho hello", Some("Bash"))]
 	#[case::env_split("#!/usr/bin/env -S deno run --allow-net\nconsole.log(1)", Some("TypeScript"))]
 	#[case::versioned("#!/usr/bin/env python3.12\nprint(1)", Some("Python"))]
-	#[case::longest_match("#!/usr/bin/env perl6\nsay 1", Some("Raku"))]
 	#[case::interpreter_must_end("#!/usr/bin/env nodemon\nx", None)]
 	#[case::no_shebang("print('hello')\n# not a shebang", None)]
 	#[case::empty("", None)]

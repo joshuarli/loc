@@ -14,13 +14,13 @@ loc counts the code, comment, blank, and shebang lines in a codebase by language
 - Counts code embedded in other files by that code's own language rules, including:
   - Scripts and styles in HTML, Vue, Svelte, Astro, and HTML templates.
   - The HTML around `<?php ... ?>` blocks in PHP files.
-  - Code blocks in Markdown, AsciiDoc, Org, and reStructuredText.
+  - Code blocks in Markdown, AsciiDoc, and reStructuredText.
 - Respects `.gitignore` and `.ignore` files.
 - Skips generated files, such as lockfiles, translations, IDE project files, and files marked `DO NOT EDIT`.
 - Reads the linguist attributes in `.gitattributes` files, the same way GitHub does.
 - Filters by language, glob pattern, and directory depth.
 - Shows counts per file or per directory.
-- Recognizes 775 languages.
+- Recognizes 102 languages.
 - Handles UTF-8, UTF-16, and legacy text encodings.
 
 ## Install
@@ -284,9 +284,9 @@ GitHub uses the linguist attributes in `.gitattributes` files for its language s
 loc ignores `linguist-language` when:
 
 - It doesn't recognize `Name`.
-- The file's name already identifies exactly one language. For example, `*.bgt` files stay BGT and `*.nvgt` files stay NVGT, even though many projects map them to AngelScript because GitHub doesn't recognize BGT or NVGT.
+- The file's name already identifies exactly one language. For example, `*.svelte` files stay Svelte.
 
-When the file's name matches no language or several, such as `*.h` or `*.pp`, `Name` decides.
+When the file's name matches no language or several, such as `*.h`, `Name` decides.
 
 For example:
 

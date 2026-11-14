@@ -150,7 +150,7 @@ fn parse_expectation_line(line: &str) -> Option<Expectation> {
 	let meaningful = trimmed.trim_start_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_');
 	let rest = meaningful.strip_prefix("expect:")?.trim();
 	// The language is quoted since names can contain spaces or punctuation, e.g. `lang="Common Lisp"`.
-	// Unquoted names (`lang=Smalltalk`) are also accepted, for comment syntaxes that can't contain quotes.
+	// Unquoted names (`lang=Rust`) are also accepted, for comment syntaxes that can't contain quotes.
 	let (lang, rest) = match rest.split_once("lang=") {
 		Some((before, after)) => {
 			let (lang, after) = match after.strip_prefix('"') {
