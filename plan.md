@@ -140,11 +140,12 @@ remove their production code rather than accumulating alternate engines.
     pre-existing `package.readme` manifest warning.
   - LineJudge 0.4.0 (`linejudge check --counter codestats`, release binary): 107 agree, 0 fail, 0 unclaimed; 3 fixtures
     disabled by the fixture set. Recorded results file untouched.
-  - Release qualification: `make release` + `make verify-release` + `make test-ci` all pass for aarch64-unknown-linux-musl
-    inside the pinned Docker image (statically linked, stripped, no INTERP/NEEDED) and for aarch64-apple-darwin natively on
-    this host (Mach-O, ELF checks skipped as designed). x86_64-unknown-linux-musl: built and qualified under Docker emulation
-    — result recorded below if the background job lands green, otherwise flagged as unrun. Dist sizes: macOS 1.98 MB,
-    aarch64-musl 2.23 MB.
+  - Release qualification: `make release` + `make verify-release` + `make test-ci` all pass. aarch64-apple-darwin built
+    natively on this host (Mach-O, ELF checks skipped as designed). aarch64-unknown-linux-musl and x86_64-unknown-linux-musl
+    both built and verified inside the pinned Docker images (statically linked, stripped, no INTERP/NEEDED; `make test-ci`
+    green). The x86_64 image runs under Docker emulation on Apple Silicon, so compile/test results carry no timing meaning
+    there and AVX2 behavior was not exercised on real hardware; performance claims for x86 remain unrun on physical x86.
+    Dist sizes: macOS 1.98 MB, aarch64-musl 2.23 MB.
   - Apple Silicon masks/AVX2: compiled and unit-tested on aarch64 (NEON) and x86_64 (emulation); the AVX2/AVX-512 perf
     experiments remain unrun — this host has no x86 hardware, and Rosetta-class emulation is not evidence for it.
   - Production overhead added by the campaign: the `analysis::bench` doc-hidden seam (a few hundred bytes in the library,
@@ -630,7 +631,8 @@ merge-test race). Rejected on measurement: P2 boundary carry, P4 MOST_SEARCHED 4
 threshold changes. Not attempted, explicitly flagged: P3 common-state rewrite, P7 approximation policies, AVX2/AVX-512
 measurements, Linux perf/instruction counters, competitor/corpus comparisons, hot-loop PGO. Distribution artifacts are
 qualified on aarch64-apple-darwin (native) and aarch64-unknown-linux-musl (Docker, static, stripped, tests green);
-x86-64-musl qualification runs under emulation and is reported in P8 when it lands, not assumed.
+x86_64-musl qualification runs under emulation and is reported in P8; AVX2 perf evidence on physical x86 hardware remains
+unrun. Distribution artifacts are qualified (build + static/stripped verification + tests) on all three claimed platforms.
 
 A defensible summary claim for this round is *cheaper, more trustworthy measurement with no shipped speedup*, not a
 multiplier. Any future speed work should start from the ranking in P0 (automaton-first attack on the marked-line path)
