@@ -59,3 +59,11 @@ If neither a git checkout nor a Cargo archive is available and `CODESTATS_BUILD_
 - `build.rs` — compiles `languages.json5` into the language table and embeds the version commit
 - `benches/` — rustybench harness and the recorded baseline
 - `.linejudge/` — conformance suite for the counting rules; regenerate `.linejudge/recorded/` only deliberately
+
+## Performance campaign
+
+[plan.md](plan.md) is the implementation sequence and single experiment checklist
+for parser and end-to-end performance work. Start with its attribution baselines,
+preserve the lean CLI and dependency reductions, and keep exact optimizations
+separate from explicitly budgeted approximation experiments. Record accepted and
+rejected experiments there rather than creating a parallel roadmap.
