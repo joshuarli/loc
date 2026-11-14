@@ -160,8 +160,9 @@ remove their production code rather than accumulating alternate engines.
     both built and verified inside the pinned Docker images (statically linked, stripped, no INTERP/NEEDED; `make test-ci`
     green). macOS and aarch64-unknown-linux-musl releases were re-built and re-verified on the P1 TokenStarts commit
     (`84dea0f`): macOS 107/0/3 LineJudge and `make verify-release` pass, aarch64-musl `make test-ci` plus static/stripped
-    verification pass. The x86_64-musl qualification was likewise re-run on that commit — see below if green. Dist sizes:
-    macOS 1.98 MB, aarch64-musl 2.23 MB.
+    verification pass; x86_64-musl was also re-run on `84dea0f` — release, static/stripped verification and the full
+    CI test suite pass (under emulation; AVX2 behavior on real hardware remains unmeasured). Dist sizes: macOS 1.98 MB,
+    aarch64-musl 2.23 MB.
   - Apple Silicon masks/AVX2: compiled and unit-tested on aarch64 (NEON) and x86_64 (emulation); the AVX2/AVX-512 perf
     experiments remain unrun — this host has no x86 hardware, and Rosetta-class emulation is not evidence for it.
   - Production overhead added by the campaign: the `analysis::bench` doc-hidden seam (a few hundred bytes in the library,
@@ -649,8 +650,9 @@ merge-test race). Rejected on measurement: P2 boundary carry, P4 MOST_SEARCHED 4
 threshold changes. Not attempted, explicitly flagged: P3 common-state rewrite, P7 approximation policies, AVX2/AVX-512
 measurements, Linux perf/instruction counters, competitor/corpus comparisons, hot-loop PGO. Distribution artifacts are
 qualified on aarch64-apple-darwin (native) and aarch64-unknown-linux-musl (Docker, static, stripped, tests green);
-x86_64-musl qualification runs under emulation and is reported in P8; AVX2 perf evidence on physical x86 hardware remains
-unrun. Distribution artifacts are qualified (build + static/stripped verification + tests) on all three claimed platforms.
+x86_64-musl qualification was re-run under emulation on the final commit and passed (build + static verification + tests);
+AVX2 perf evidence on physical x86 remains unrun. Distribution artifacts are qualified on all three claimed platforms
+(macOS arm64 native; aarch64- and x86_64-linux-musl in pinned Docker).
 
 A defensible summary claim is *faster marked-line scanning on languages with literal-prefix markers, at no measurable cost
 elsewhere on this host*; still no cross-corpus multiplier claim, and AVX2/x86 physical-hardware performance remains unrun.
