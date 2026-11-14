@@ -20,7 +20,7 @@ loc counts the code, comment, blank, and shebang lines in a codebase by language
 - Reads the linguist attributes in `.gitattributes` files, the same way GitHub does.
 - Filters by language, glob pattern, and directory depth.
 - Shows counts per file or per directory.
-- Recognizes 102 languages.
+- Recognizes 103 languages.
 - Handles UTF-8, UTF-16, and legacy text encodings.
 
 ## Install
