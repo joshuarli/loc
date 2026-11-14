@@ -481,7 +481,7 @@ fn top_level_help_lists_commands_and_common_options() {
 	assert!(stdout.contains("Usage:\n  cs [OPTIONS] [PATH]...\n  cs <COMMAND>"), "{stdout}");
 	assert!(stdout.contains("-h, --help"), "{stdout}");
 	assert!(stdout.contains("-V, --version"), "{stdout}");
-	for command in ["completions", "langs", "diff", "init"] {
+	for command in ["langs", "diff", "init"] {
 		assert!(stdout.contains(command), "{stdout}");
 	}
 }
@@ -491,7 +491,6 @@ fn every_command_has_a_help_page_with_its_own_options() {
 	for (command, marker) in [
 		("diff", "--to <REV>"),
 		("langs", "List all supported programming languages"),
-		("completions", "<SHELL>"),
 		("init", "--force"),
 	] {
 		let output = cs().args([command, "--help"]).output().unwrap();
@@ -510,21 +509,6 @@ fn version_reports_the_package_version_and_a_commit() {
 	assert!(stdout.trim_end().starts_with(concat!("cs ", env!("CARGO_PKG_VERSION"), " (git ")), "{stdout}");
 	let sha = stdout.trim_end().rsplit(' ').next().unwrap().trim_end_matches(')');
 	assert!(sha.len() >= 7 && sha.bytes().all(|b| b.is_ascii_hexdigit()), "{stdout}");
-}
-
-#[test]
-fn completions_lists_subcommands_for_each_shell() {
-	for shell in ["bash", "zsh", "fish", "powershell", "elvish"] {
-		let output = cs().args(["completions", shell]).output().unwrap();
-		assert!(output.status.success(), "{shell}");
-		let stdout = String::from_utf8(output.stdout).unwrap();
-		for command in ["completions", "langs", "diff", "init"] {
-			assert!(stdout.contains(command), "{shell}: {stdout}");
-		}
-	}
-	let output = cs().args(["completions", "cobol"]).output().unwrap();
-	assert_eq!(output.status.code(), Some(2));
-	assert!(String::from_utf8(output.stderr).unwrap().contains("possible values: bash, zsh, fish, powershell, elvish"));
 }
 
 #[test]

@@ -1,6 +1,5 @@
 mod analyze;
 mod command;
-mod completions;
 mod diff;
 mod error;
 mod help;
@@ -54,7 +53,6 @@ pub static ROOT_SPEC: CommandSpec = CommandSpec {
 	],
 	positionals: &[analyze::PATH_POSITIONAL],
 	subcommands: &[
-		SubcommandSpec { name: "completions", about: "Generate shell completion scripts", spec: &completions::COMPLETIONS_SPEC, run: completions::run },
 		SubcommandSpec { name: "langs", about: "List all supported programming languages", spec: &langs::LANGS_SPEC, run: langs::run },
 		SubcommandSpec {
 			name: "diff",
@@ -207,7 +205,7 @@ fn short_option_step(arg: &OsStr) -> Option<usize> {
 mod tests {
 	use super::*;
 
-	static INTERNAL_SPECS: &[&CommandSpec] = &[&ROOT_SPEC, &completions::COMPLETIONS_SPEC, &langs::LANGS_SPEC, &diff::DIFF_SPEC, &init::INIT_SPEC];
+	static INTERNAL_SPECS: &[&CommandSpec] = &[&ROOT_SPEC, &langs::LANGS_SPEC, &diff::DIFF_SPEC, &init::INIT_SPEC];
 
 	fn all_specs() -> Vec<&'static CommandSpec> {
 		INTERNAL_SPECS.to_vec()

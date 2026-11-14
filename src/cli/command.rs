@@ -171,7 +171,7 @@ pub fn utf8_value(option: &OptionSpec, raw: &OsStr) -> Result<String, CliError> 
 	})
 }
 
-pub fn invalid_value_spelling(spelling: &str, value: &str, possible: &[&'static str]) -> CliError {
+fn invalid_value_spelling(spelling: &str, value: &str, possible: &[&'static str]) -> CliError {
 	let possible_list = possible.join(", ");
 	let mut message = format!("invalid value '{value}' for '{spelling}'\n  [possible values: {possible_list}]");
 	if let Some(suggestion) = suggest(value, possible) {
@@ -184,7 +184,7 @@ fn invalid_value(option: &OptionSpec, value: &str, possible: &[&'static str]) ->
 	invalid_value_spelling(&option.spelling(), value, possible)
 }
 
-pub fn suggest<'a>(value: &str, candidates: &[&'a str]) -> Option<&'a str> {
+fn suggest<'a>(value: &str, candidates: &[&'a str]) -> Option<&'a str> {
 	candidates
 		.iter()
 		.map(|candidate| (levenshtein(value, candidate), *candidate))
