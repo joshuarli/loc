@@ -5,11 +5,11 @@ version-flag = "--version"
 [acquisition]
 channel = "github-release-file"
 name    = "trypsynth/codestats"
-version = "1.1.0"
+version = "1.1.1"
 
-Containers and release archives carry these binaries; Linux ARM64 uses the musl build and macOS uses the Apple Silicon build.
+# Pin to the newest release of the pre-rebrand code (v1.1.1); the Linux binary is the musl target, macOS is the Apple Silicon build. Bump to a release on joshuarli/loc once one exists.
 [acquisition.file]
-linux   = "cs-x86_64-unknown-linux-musl-static"
+linux   = "cs-x86_64-unknown-linux-musl"
 macos   = "cs-aarch64-apple-darwin"
 
 [run]
