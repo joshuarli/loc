@@ -472,3 +472,77 @@ fn project_files_visual_studio_wrote_count_as_generated() {
 	assert_eq!(files(&[]), 1);
 	assert_eq!(files(&["--include-generated"]), 3);
 }
+
+#[test]
+fn top_level_help_lists_commands_and_common_options() {
+	let output = cs().arg("--help").output().unwrap();
+	assert!(output.status.success());
+	let stdout = String::from_utf8(output.stdout).unwrap();
+	assert!(stdout.contains("Usage:\n  cs [OPTIONS] [PATH]...\n  cs <COMMAND>"), "{stdout}");
+	assert!(stdout.contains("-h, --help"), "{stdout}");
+	assert!(stdout.contains("-V, --version"), "{stdout}");
+	for command in ["completions", "langs", "diff", "init"] {
+		assert!(stdout.contains(command), "{stdout}");
+	}
+}
+
+#[test]
+fn every_command_has_a_help_page_with_its_own_options() {
+	for (command, marker) in [
+		("diff", "--to <REV>"),
+		("langs", "List all supported programming languages"),
+		("completions", "<SHELL>"),
+		("init", "--force"),
+	] {
+		let output = cs().args([command, "--help"]).output().unwrap();
+		assert!(output.status.success(), "{command}");
+		let stdout = String::from_utf8(output.stdout).unwrap();
+		assert!(stdout.contains(marker), "{command}: {stdout}");
+		assert!(stdout.contains("Options:"), "{command}: {stdout}");
+	}
+}
+
+#[test]
+fn version_reports_the_package_version_and_a_commit() {
+	let output = cs().arg("--version").output().unwrap();
+	assert!(output.status.success());
+	let stdout = String::from_utf8(output.stdout).unwrap();
+	assert!(stdout.trim_end().starts_with(concat!("cs ", env!("CARGO_PKG_VERSION"), " (git ")), "{stdout}");
+	let sha = stdout.trim_end().rsplit(' ').next().unwrap().trim_end_matches(')');
+	assert!(sha.len() >= 7 && sha.bytes().all(|b| b.is_ascii_hexdigit()), "{stdout}");
+}
+
+#[test]
+fn completions_lists_subcommands_for_each_shell() {
+	for shell in ["bash", "zsh", "fish", "powershell", "elvish"] {
+		let output = cs().args(["completions", shell]).output().unwrap();
+		assert!(output.status.success(), "{shell}");
+		let stdout = String::from_utf8(output.stdout).unwrap();
+		for command in ["completions", "langs", "diff", "init"] {
+			assert!(stdout.contains(command), "{shell}: {stdout}");
+		}
+	}
+	let output = cs().args(["completions", "cobol"]).output().unwrap();
+	assert_eq!(output.status.code(), Some(2));
+	assert!(String::from_utf8(output.stderr).unwrap().contains("possible values: bash, zsh, fish, powershell, elvish"));
+}
+
+#[test]
+fn cluster_and_equals_and_double_dash_parse_like_the_old_cli() {
+	let root = scratch_dir("cluster_and_equals_and_double_dash_parse_like_the_old_cli");
+	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
+	let report = |args: &[&str]| {
+		let output = cs().arg(&root).args(args).arg("-o").arg("json-compact").output().unwrap();
+		assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+		serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap()["totals"]["file_count"].as_u64().unwrap()
+	};
+	assert_eq!(report(&["--quiet"]), 1);
+	assert_eq!(report(&["-q"]), 1);
+	assert_eq!(report(&["--ext=rs"]), 1);
+	assert_eq!(report(&["--ext", "=rs"]), 0);
+	// After `--`, everything is a path, even what looks like a flag.
+	let output = cs().current_dir(&root).arg("--").arg("-v").output().unwrap();
+	let stderr = String::from_utf8(output.stderr).unwrap();
+	assert_eq!(output.status.code(), Some(1));
+	assert!(stderr.contains("`-v`"), "{stderr}");
+}

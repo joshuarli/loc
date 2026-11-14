@@ -1,7 +1,21 @@
-use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
+macro_rules! cli_values {
+	($enum:ident, $($variant:ident => $text:literal,)*) => {
+		impl $enum {
+			pub const VALUES: &'static [&'static str] = &[$($text,)*];
+
+			pub fn from_cli(value: &str) -> Option<Self> {
+				match value {
+					$($text => Some(Self::$variant),)*
+					_ => None,
+				}
+			}
+		}
+	};
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NumberStyle {
 	Plain,
@@ -10,15 +24,29 @@ pub enum NumberStyle {
 	Space,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
+cli_values! {
+	NumberStyle,
+	Plain => "plain",
+	Comma => "comma",
+	Underscore => "underscore",
+	Space => "space",
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SizeStyle {
 	Binary,
 	Decimal,
 }
 
+cli_values! {
+	SizeStyle,
+	Binary => "binary",
+	Decimal => "decimal",
+}
+
 /// Field used when ordering languages (and optionally files).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LanguageSortKey {
 	Lines,
@@ -30,12 +58,29 @@ pub enum LanguageSortKey {
 	Name,
 }
 
+cli_values! {
+	LanguageSortKey,
+	Lines => "lines",
+	Code => "code",
+	Comments => "comments",
+	Blanks => "blanks",
+	Files => "files",
+	Size => "size",
+	Name => "name",
+}
+
 /// Direction for applying a sort key.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SortDirection {
 	Asc,
 	Desc,
+}
+
+cli_values! {
+	SortDirection,
+	Asc => "asc",
+	Desc => "desc",
 }
 
 /// Indentation style for output formatting.

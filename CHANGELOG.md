@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `--version` reports the full commit the binary was built from, for example `cs 1.2.0 (git abc1234def56)`. The commit is embedded at build time, so builds outside a git checkout, such as from a source archive, must set `CODESTATS_BUILD_SHA` and fail with an error otherwise instead of embedding a wrong commit. Binaries built by `cargo install codestats` from crates.io embed the commit the crate was packaged from
+- Help output is generated from one command specification, shared with the parser and the shell completions. `cs --help` is a deterministic reference of every command. The shell completions now complete `cs`; they previously completed `codestats`
 - Breaking: removed the `csv`, `tsv`, `markdown`, and `html` output formats; `cs` reports as text or JSON only
 - Breaking: removed support for Windows; releases ship statically linked musl binaries for Linux (x86_64 and ARM64) and a macOS Apple Silicon build
 - Breaking: GitHub prereleases replace the rolling Nightly Build release; each dispatch of the release workflow publishes a prerelease tagged `release-<sha>` with a `SHA256SUMS` file

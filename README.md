@@ -64,6 +64,14 @@ cd codestats
 cargo install --path .
 ```
 
+`cs --version` reports the commit the binary was built from, embedded at build time. Building outside a git checkout, for example from a source archive, requires the commit id to be set explicitly:
+
+```bash
+CODESTATS_BUILD_SHA=<7 to 40 digit commit id> cargo install --path .
+```
+
+If neither a git checkout nor a Cargo archive is available and `CODESTATS_BUILD_SHA` isn't set, the build fails with an error rather than embedding a wrong commit.
+
 ## Quick start
 
 Count the current directory:
@@ -194,7 +202,7 @@ If you don't give a path, codestats counts the current directory. If the path is
 - `-c, --config <PATH>`: use this configuration file.
 - `--no-config`: don't read any configuration file.
 - `-h, --help`: show help.
-- `-V, --version`: show the version.
+- `-V, --version`: show the version, including the commit the binary was built from.
 
 ### Exit status
 

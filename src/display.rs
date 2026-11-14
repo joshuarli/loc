@@ -26,7 +26,6 @@ mod report;
 use std::{io::Write, path::PathBuf};
 
 use anyhow::Result;
-use clap::ValueEnum;
 pub use diff::{Versions, write_diff};
 pub use formatting::{FormatterContext, apply_sort};
 pub use human::HumanFormatter;
@@ -37,12 +36,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::analysis::AnalysisResults;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum OutputFormat {
 	Human,
 	Json,
 	JsonCompact,
+}
+
+impl OutputFormat {
+	pub const VALUES: &'static [&'static str] = &["human", "json", "json-compact"];
+
+	pub fn from_cli(value: &str) -> Option<Self> {
+		match value {
+			"human" => Some(Self::Human),
+			"json" => Some(Self::Json),
+			"json-compact" => Some(Self::JsonCompact),
+			_ => None,
+		}
+	}
 }
 
 /// Trait for formatting analysis results in a desired format.
