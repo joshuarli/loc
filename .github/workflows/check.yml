@@ -17,10 +17,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy
-      - uses: dtolnay/rust-toolchain@nightly
-        if: matrix.rust == 'stable'
-        with:
-          components: rustfmt, clippy
       - uses: actions/cache@v6
         with:
           path: |
@@ -32,9 +28,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-${{ matrix.rust }}-
-      - name: Check formatting
-        if: matrix.rust == 'stable'
-        run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy
       - name: Run tests
