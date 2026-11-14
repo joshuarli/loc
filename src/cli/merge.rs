@@ -133,10 +133,9 @@ pub fn ensure_path(config: &Config) -> Result<()> {
 #[cfg(test)]
 mod tests {
 	use std::{
-		env,
 		fs,
 		ffi::OsString,
-		path::PathBuf,
+		path::{Path, PathBuf},
 		time::{SystemTime, UNIX_EPOCH},
 	};
 
@@ -160,7 +159,10 @@ mod tests {
 
 	fn write_config(contents: &str) -> PathBuf {
 		let unique = SystemTime::now().duration_since(UNIX_EPOCH).expect("system time is set").as_nanos();
-		let root = env::temp_dir().join(format!("codestats_config_test_{}_{}", std::process::id(), unique));
+		let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("target")
+			.join("tmp")
+			.join(format!("codestats_config_test_{}_{unique}", std::process::id()));
 		fs::create_dir_all(&root).expect("create temp dir");
 		let path = root.join("config.toml");
 		fs::write(&path, contents).expect("write temp config");
