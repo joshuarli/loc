@@ -77,7 +77,7 @@ mod tests {
 	fn get_candidates_matches_exact_filenames_case_sensitively() {
 		assert!(!get_candidates("MAKEFILE").iter().any(|lang| lang.name == "Makefile"));
 		// No language claims an ordinary lowercase `build` script.
-		assert!(get_candidates("build").is_empty());
+		assert_eq!(get_candidates("build").len(), 0);
 	}
 
 	#[test]
