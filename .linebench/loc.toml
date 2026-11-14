@@ -7,7 +7,7 @@ channel = "github-release-file"
 name    = "trypsynth/codestats"
 version = "1.1.1"
 
-# Pin to the newest release of the pre-rebrand code (v1.1.1); the Linux binary is the musl target, macOS is the Apple Silicon build. Bump to a release on joshuarli/loc once one exists.
+# Pin to the newest published release of the pre-rebrand code (v1.1.1), whose bare binaries linebench can fetch. joshuarli/loc's releases ship archives only, which linebench 0.4.1 does not read; bump this once the project publishes unarchived binaries alongside them.
 [acquisition.file]
 linux   = "cs-x86_64-unknown-linux-musl"
 macos   = "cs-aarch64-apple-darwin"
