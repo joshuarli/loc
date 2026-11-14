@@ -158,9 +158,10 @@ remove their production code rather than accumulating alternate engines.
   - Release qualification: `make release` + `make verify-release` + `make test-ci` all pass. aarch64-apple-darwin built
     natively on this host (Mach-O, ELF checks skipped as designed). aarch64-unknown-linux-musl and x86_64-unknown-linux-musl
     both built and verified inside the pinned Docker images (statically linked, stripped, no INTERP/NEEDED; `make test-ci`
-    green). The x86_64 image runs under Docker emulation on Apple Silicon, so compile/test results carry no timing meaning
-    there and AVX2 behavior was not exercised on real hardware; performance claims for x86 remain unrun on physical x86.
-    Dist sizes: macOS 1.98 MB, aarch64-musl 2.23 MB.
+    green). macOS and aarch64-unknown-linux-musl releases were re-built and re-verified on the P1 TokenStarts commit
+    (`84dea0f`): macOS 107/0/3 LineJudge and `make verify-release` pass, aarch64-musl `make test-ci` plus static/stripped
+    verification pass. The x86_64-musl qualification was likewise re-run on that commit — see below if green. Dist sizes:
+    macOS 1.98 MB, aarch64-musl 2.23 MB.
   - Apple Silicon masks/AVX2: compiled and unit-tested on aarch64 (NEON) and x86_64 (emulation); the AVX2/AVX-512 perf
     experiments remain unrun — this host has no x86 hardware, and Rosetta-class emulation is not evidence for it.
   - Production overhead added by the campaign: the `analysis::bench` doc-hidden seam (a few hundred bytes in the library,
