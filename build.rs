@@ -51,14 +51,11 @@ fn main() -> Result<()> {
 fn emit_git_sha() {
 	let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR");
 	let checkout = Path::new(&manifest_dir);
-	let sha = env::var(BUILD_SHA_VAR).ok().filter(|s| !s.trim().is_empty()).map_or_else(
-		|| {
-			git_output(checkout, &["rev-parse", "--short=12", "HEAD"])
-				.or_else(|| vcs_info_sha(checkout))
-				.unwrap_or_else(|| panic!("couldn't determine the git commit to embed in --version; build in a git checkout, or set {BUILD_SHA_VAR} to a commit id (required for release archives)"))
-		},
-		|sha| sha,
-	);
+	let sha = env::var(BUILD_SHA_VAR).ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| {
+		git_output(checkout, &["rev-parse", "--short=12", "HEAD"])
+			.or_else(|| vcs_info_sha(checkout))
+			.unwrap_or_else(|| panic!("couldn't determine the git commit to embed in --version; build in a git checkout, or set {BUILD_SHA_VAR} to a commit id (required for release archives)"))
+	});
 	let sha = validate_sha(&sha);
 	println!("cargo:rustc-env=CODESTATS_GIT_SHA={sha}");
 	println!("cargo:rerun-if-env-changed={BUILD_SHA_VAR}");

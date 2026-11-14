@@ -136,7 +136,6 @@ mod tests {
 		fs,
 		ffi::OsString,
 		path::{Path, PathBuf},
-		time::{SystemTime, UNIX_EPOCH},
 	};
 
 	use super::merge_config;
@@ -158,7 +157,8 @@ mod tests {
 	}
 
 	fn write_config(contents: &str) -> PathBuf {
-		let unique = SystemTime::now().duration_since(UNIX_EPOCH).expect("system time is set").as_nanos();
+		static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+		let unique = std::sync::atomic::AtomicU64::fetch_add(&NEXT, 1, std::sync::atomic::Ordering::Relaxed);
 		let root = Path::new(env!("CARGO_MANIFEST_DIR"))
 			.join("target")
 			.join("tmp")
