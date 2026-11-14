@@ -203,7 +203,7 @@ fn starts_with(haystack: &[u8], needle: &[u8]) -> bool {
 	haystack.len() >= needle.len() && haystack.iter().zip(needle).all(|(a, b)| a == b)
 }
 
-/// A language's tokens by their first byte, each byte's longest first.
+/// A language's tokens by their first byte, each byte's longest first. Alphanumeric-first tokens are searched like the others: a candidate costs a few byte compares, and the first-byte set stays under the grouped-search limit anyway.
 #[derive(Debug)]
 struct TokenStarts {
 	first: ByteSet,
@@ -211,14 +211,10 @@ struct TokenStarts {
 }
 
 impl TokenStarts {
-	/// `None` when a token starts with a letter or digit (Rust's `r"`), whose byte is on nearly every line and would stop the search at every word.
 	fn new(tokens: impl IntoIterator<Item = (&'static str, Token)>) -> Option<Self> {
 		let mut by_first: Vec<Vec<(&'static [u8], Token)>> = vec![Vec::new(); 256];
 		for (token, kind) in tokens {
 			let &first = token.as_bytes().first()?;
-			if first.is_ascii_alphanumeric() || first == b'_' {
-				return None;
-			}
 			by_first[usize::from(first)].push((token.as_bytes(), kind));
 		}
 		for bucket in &mut by_first {
@@ -650,3 +646,4 @@ mod tests {
 		assert!(checked > 50, "only {checked} languages");
 	}
 }
+

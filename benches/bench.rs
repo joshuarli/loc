@@ -145,6 +145,19 @@ fn count_non_ascii_in_memory(bencher: Bencher) {
 }
 
 #[rustybench::bench]
+fn count_r_dense_in_memory(bencher: Bencher) {
+	// One long line of r-heavy words ending in a marker: every candidate search on it finds "r" hundreds of times before the comment delimiter.
+	let mut bytes = String::with_capacity(48 * 1024);
+	for _ in 0..700 {
+		bytes.push_str("r rr rrr rrrr rrrrr ");
+	}
+	bytes.push_str("// tail comment\n");
+	let bytes = bytes.into_bytes();
+	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+}
+
+#[rustybench::bench]
 fn count_json_in_memory(bencher: Bencher) {
 	let mut bytes = Vec::with_capacity(256 * 1024);
 	let mut n = 0u64;

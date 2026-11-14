@@ -36,14 +36,27 @@ remove their production code rather than accumulating alternate engines.
     tool hashes/versions for whoever does run it. Costs `perf stat` instructions/byte and cold-page-cache results: unrun.
     Linux/aarch64-musl and x86_64/musl measurements: see P8. A/B timing on a loaded host is ±10%; every timing claim below
     was made under interleaved A/B or accepted only at >noise levels.
-- [x] P1 — Compact immutable scan plans. **Decided: no change.**
-  - Lazy matcher setup measured below decision threshold: single warm file counts in 4-6 ms against a 4.9 ms empty-process
-    floor; per-bucket `Vec::new()` in `TokenStarts` allocates nothing until a token lands in the bucket, so the 256-way
-    `Vec<Vec<_>>` costs a handful of allocations per language, not 256. Detection+counting adds ~1-2 µs over counting alone.
-  - Hot lookup needs no representation change: `TokenStarts::find` is one index + a tiny loop, and the profile shows time in
-    the automaton for languages whose tokens force `starts: None` (Rust's `r"`), which a table/slice layout cannot fix.
-  - Keeping `aho-corasick`: replacing it is explicitly ruled out by the plan for dense-marker inputs. No generated tables,
-    no new code-generation dependency, no dispatch-cache layer added. Binary size and first-use latency unchanged.
+- [x] P1 — Compact immutable scan plans. **Decided: one change accepted, rest rejected.**
+  - **Accepted (2026-11-13, second campaign session): alphanumeric-first tokens now enter `TokenStarts`.** The old
+    `TokenStarts::new` bailed to `None` for any token starting with a letter/digit/`_`, which silently forced the
+    aho-corasick DFA onto every line of the 17 affected languages — including Rust, C++ and Objective-C++ (`r"`, `r#"`,
+    `R"`) — and also disabled `QuickLines` for them. The bailout is removed; tokens are bucketed and searched like the
+    others (candidates cost a few compares; grouped search stays ≤4 bytes). Interleaved A/B (host load ~4-9, ±10% noise):
+    rust-in-memory 185-191 µs → 151-164 µs (~18%), non-ASCII 572-604 µs → 323-336 µs (~43%), detect+count matches; generated
+    800-file corpus and fixtures unchanged (6.77-6.91 ms / 2.77-2.93 ms, i.e. disk-walk bound in this state of the host);
+    `count_r_dense_in_memory` (pathological 'r'-dense line ending in a marker) 1.4 µs — no quadratic re-scan. `git stash`-based
+    interleaved pairs both confirm. `cargo test` 513/513 incl. the extended `token_starts_find_what_the_automaton_finds`
+    (now covers all languages that use `starts`, ~73 incl. the 17) and `sweeping_matches_classifying_every_line`;
+    `linejudge check --counter codestats`: 107 agree, 0 fail; clippy clean; `cargo bench` harness extended with the
+    `count_r_dense_in_memory` guard.
+  - Historical ~19 ms `count_generated_corpus` on this host dropped to ~6.8 ms between sessions with OrbStack quieted; the two
+    are different host states, not a code effect (the interleaved A/B above isolates the change: neutral there).
+  - **Left as-is, with reasons:** lazy matcher setup below decision threshold: single warm file counts in 4-6 ms against a
+    4.9 ms empty-process floor; per-bucket `Vec::new()` in `TokenStarts` allocates nothing until a token lands in the bucket.
+  - The DFA stays for `block_comments.start_automaton` (used by `find_block_start`) and as `StringMatchers`' fallback where/if
+    `starts` is ever absent; switching on `aho` removal question is moot since we keep dense-marker coverage. No generated
+    tables, no new code-generation dependency, no dispatch-cache layer; binary-size delta is nil (same data structures with
+    one deleted branch).
 - [x] P2 — Keep the mask pass useful after it finds a marker. **Decided: measured experiment rejected.**
   - Experiment: carry the stopping line's `\n` position out of the block masks (`sweep` returned it as `Option<usize>`;
     both call sites in `line_counter` reused it instead of re-running `line_end`/`memchr`). Verified counts and state by the
@@ -620,11 +633,13 @@ changes pass their relevant gates, distribution artifacts are qualified on the
 claimed platforms, and unresolved limitations are explicit. “No worthwhile win”
 is a valid outcome for an individual experiment; an unmeasured rewrite is not.
 
-## Campaign outcome (2026-11-13, checkpoint `2764917` + P8 fixes)
+## Campaign outcome (2026-11-13, checkpoint `2764917` + P8 fixes and the P1 TokenStarts fix, commits `956ded7`..`97d7abb` and follow-ups)
 
 The useful experiments were decided, accepted changes pass the gates, and unresolved items are explicit rather than
-silently missing. No production optimization survived measurement, which the plan defines as a valid individual outcome;
-the plan's biggest lever (P3/P7) is recorded as not attempted, with the evidence for why and what remains.
+silently missing. One production optimization survived measurement with margin: the alphanumeric-first `TokenStarts`
+fix (see P1), worth ~18% on marked-line in-memory Rust and ~43% on the non-ASCII workload, with counts and state pinned
+by the randomized sweep/classifier comparisons and LineJudge 107/0. The bigger levers (P3 compact state, P7 approximation)
+remain as recorded.
 
 Accepted: measurement infrastructure (P0 benches, process driver, script fixes), pre-existing gate fixes (build.rs clippy,
 merge-test race). Rejected on measurement: P2 boundary carry, P4 MOST_SEARCHED 4/16, P6 candidate-vector/alloc tricks,
@@ -634,9 +649,8 @@ qualified on aarch64-apple-darwin (native) and aarch64-unknown-linux-musl (Docke
 x86_64-musl qualification runs under emulation and is reported in P8; AVX2 perf evidence on physical x86 hardware remains
 unrun. Distribution artifacts are qualified (build + static/stripped verification + tests) on all three claimed platforms.
 
-A defensible summary claim for this round is *cheaper, more trustworthy measurement with no shipped speedup*, not a
-multiplier. Any future speed work should start from the ranking in P0 (automaton-first attack on the marked-line path)
-rather than from the mask pass, which the profile does not indict.
+A defensible summary claim is *faster marked-line scanning on languages with literal-prefix markers, at no measurable cost
+elsewhere on this host*; still no cross-corpus multiplier claim, and AVX2/x86 physical-hardware performance remains unrun.
 
 ## Source anchors
 
