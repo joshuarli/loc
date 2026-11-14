@@ -30,7 +30,9 @@ remove their production code rather than accumulating alternate engines.
     3.2-9.0 MiB. Validation pass measured as effectively free (P5). Ranked profile (macOS `sample` of a 395 MB single-file
     count, ~103 samples): `count_lines` 19 (17 in the aho-corasick DFA `try_find_fwd` + 14 in its `RareBytesThree` prefilter,
     i.e. ~31%), `BlockScanner::sweep` ~16-19 (~15%), `classify_with_strings` 10, `classify_before` 8, `find_close_start` 7.
-    The automaton dominates the marked-line path, not the masks.
+    The automaton dominates the marked-line path, not the masks. (This ranking is pre-TokenStarts-fix; after the P1 change a
+    re-profile — 1.47 GB sample on the same generator shape — shows `classify_with_strings` ~27%, `QuickLines::is_plain_code`
+    ~20%, `BlockScanner::sweep` ~18%, `simdutf8` ~5%.)
   - `scripts/costs.py` needs Linux perf; not run here. `scripts/bench.sh` corpora not downloaded and competitors
     (mezura/tokei/scc/gocloc) not installed: matched-manifest external comparison unrun; the hardened bench.sh records
     tool hashes/versions for whoever does run it. Costs `perf stat` instructions/byte and cold-page-cache results: unrun.
