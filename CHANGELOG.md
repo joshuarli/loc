@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Breaking: removed the `csv`, `tsv`, `markdown`, and `html` output formats; `cs` reports as text or JSON only
+- Breaking: musl static builds no longer use mimalloc and link with the system allocator
+
 ## 1.1.1
 
 - Writes reports faster and with less memory: `-v -o json` over 100,000 files went from 750 ms to 190 ms, and verbose human, CSV, and compact JSON reports take about 30% less time

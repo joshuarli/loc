@@ -6,7 +6,7 @@
 
 The fastest and most accurate code counter around. Think that's wrong? Open an issue with [numbers](#benchmarks) or [a miscounted file](#accuracy) and I'll change this line.
 
-codestats counts the code, comment, blank, and shebang lines in a codebase by language, and reports them as text, JSON, CSV, TSV, Markdown, or HTML. Use it for audits, comparisons, scripts, or to see how much code is in a directory.
+codestats counts the code, comment, blank, and shebang lines in a codebase by language, and reports them as text or JSON. Use it for audits, comparisons, scripts, or to see how much code is in a directory.
 
 ## Features
 
@@ -123,8 +123,6 @@ cs completions bash                              # shell completions
 
 - `human` (default) for terminals.
 - `json` or `json-compact` for scripts.
-- `csv` or `tsv` for spreadsheets.
-- `markdown` or `html` for documents and dashboards.
 
 ### JSON
 
@@ -160,7 +158,7 @@ A language or file that contains code in another language, such as Rust in a Mar
 
 ### Stability
 
-Starting with 1.0, JSON fields, CSV and TSV columns, and configuration file keys only change in a new major version.
+Starting with 1.0, JSON fields and configuration file keys only change in a new major version.
 
 `schema_version` increases whenever a JSON field is renamed, removed, or changes meaning. New fields can appear without a version change, so your scripts should ignore fields they don't recognize.
 
@@ -191,7 +189,7 @@ If you don't give a path, codestats counts the current directory. If the path is
 - `-d, --sort-direction <asc|desc>`: the sort direction. Default: `desc`.
 - `-t, --top-languages <N>`: show only the N largest languages. N must be at least 1; to show only the totals, use `--quiet`.
 - `-D, --by-dir`: show counts by directory instead of by language.
-- `-o, --output <human|json|json-compact|csv|tsv|markdown|html>`: the output format. Default: `human`.
+- `-o, --output <human|json|json-compact>`: the output format. Default: `human`.
 - `--indent <tab|1-8>`: the indentation of human-readable output, as a tab or a number of spaces. Default: `tab`.
 - `--fail-on-error`: exit with an error if any file couldn't be read.
 - `-c, --config <PATH>`: use this configuration file.

@@ -1,10 +1,6 @@
 #![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic, clippy::perf)]
 #![deny(warnings)]
 
-#[cfg(target_env = "musl")]
-#[global_allocator]
-static ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
-
 mod analysis;
 mod cli;
 mod completions;
@@ -29,12 +25,6 @@ use display::{Versions, ViewOptions, formatting::pluralize};
 use terminal_size::terminal_size;
 
 fn main() -> Result<()> {
-	// mimalloc asks for transparent huge pages, and clearing a 2 MB page per thread costs more than a small repository takes to count.
-	#[cfg(target_env = "musl")]
-	// SAFETY: this call takes integers and only sets a flag on this process.
-	unsafe {
-		libc::prctl(libc::PR_SET_THP_DISABLE, 1, 0, 0, 0);
-	}
 	match run() {
 		// The reader went away (`cs | head`); there's no one left to report to.
 		Err(err) if is_broken_pipe(&err) => Ok(()),

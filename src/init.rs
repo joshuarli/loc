@@ -70,7 +70,7 @@ const DEFAULT_CONFIG_TEMPLATE: &str = "\
 # Sort direction: asc, desc
 # sort_direction = \"desc\"
 
-# Output format: human, json, json-compact, csv, tsv, markdown, html
+# Output format: human, json, json-compact
 # output = \"human\"
 
 # Indentation style: \"tab\" or a number 1-8 for spaces

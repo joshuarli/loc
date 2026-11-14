@@ -2,13 +2,9 @@
 //!
 //! ## Available Formatters
 //!
-//! - CSV ([`CsvFormatter`]): Comma-separated values for spreadsheet import.
 //! - Human ([`HumanFormatter`]): Friendly, readable text output for terminal display.
-//! - HTML ([`HtmlFormatter`]): Standalone HTML report.
 //! - JSON ([`JsonFormatter`]): Pretty-printed JSON for easy processing and reading.
 //! - JSON Compact ([`JsonCompactFormatter`]): Minified JSON for minimal bandwidth.
-//! - Markdown ([`MarkdownFormatter`]): GitHub-flavored markdown for documentation.
-//! - TSV ([`TsvFormatter`]): Tab-separated values for data pipelines.
 //!
 //! ## Customization Options
 //!
@@ -22,14 +18,10 @@
 
 mod diff;
 pub mod formatting;
-mod html;
 mod human;
 mod json;
-mod markdown;
 mod options;
 mod report;
-mod separated_values;
-pub mod template_filters;
 
 use std::{io::Write, path::PathBuf};
 
@@ -37,13 +29,10 @@ use anyhow::Result;
 use clap::ValueEnum;
 pub use diff::{Versions, write_diff};
 pub use formatting::{FormatterContext, apply_sort};
-pub use html::HtmlFormatter;
 pub use human::HumanFormatter;
 pub use json::{JsonCompactFormatter, JsonFormatter};
-pub use markdown::MarkdownFormatter;
 pub use options::{IndentStyle, LanguageSortKey, NumberStyle, SizeStyle, SortDirection, Verbosity, ViewOptions};
 pub use report::ReportData;
-pub use separated_values::{CsvFormatter, TsvFormatter};
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::AnalysisResults;
@@ -54,10 +43,6 @@ pub enum OutputFormat {
 	Human,
 	Json,
 	JsonCompact,
-	Csv,
-	Tsv,
-	Markdown,
-	Html,
 }
 
 /// Trait for formatting analysis results in a desired format.
@@ -103,83 +88,30 @@ pub fn write_output(
 		OutputFormat::Human => HumanFormatter.write_output(results, paths, view_options, writer),
 		OutputFormat::Json => JsonFormatter.write_output(results, paths, view_options, writer),
 		OutputFormat::JsonCompact => JsonCompactFormatter.write_output(results, paths, view_options, writer),
-		OutputFormat::Csv => CsvFormatter::default().write_output(results, paths, view_options, writer),
-		OutputFormat::Tsv => TsvFormatter::default().write_output(results, paths, view_options, writer),
-		OutputFormat::Markdown => MarkdownFormatter.write_output(results, paths, view_options, writer),
-		OutputFormat::Html => HtmlFormatter.write_output(results, paths, view_options, writer),
 	}
 }
 
 #[cfg(test)]
 mod tests {
-	use std::path::PathBuf;
+	#[test]
+	fn human_by_dir_replaces_the_language_breakdown() {
+		use std::path::PathBuf;
 
-	use super::{OutputFormat, Verbosity, ViewOptions, write_output};
-	use crate::analysis::{AnalysisResults, LineCounts};
+		use super::{HumanFormatter, OutputFormatter, Verbosity, ViewOptions};
+		use crate::analysis::{AnalysisResults, LineCounts};
 
-	fn render(format: OutputFormat, verbosity: Verbosity) -> String {
-		render_with(format, ViewOptions { by_dir: true, verbosity, ..ViewOptions::default() })
-	}
-
-	fn render_with(format: OutputFormat, options: ViewOptions) -> String {
 		let mut results = AnalysisResults::default();
 		let rust = crate::langs::LANGUAGES.iter().find(|l| l.name == "Rust").unwrap();
 		let counts = LineCounts { total: 10, code: 10, ..LineCounts::default() };
 		for path in ["src/main.rs", "tests/smoke.rs"] {
 			results.add_file(rust, counts.into(), 100, Some(path.to_owned()));
 		}
+		let options = ViewOptions { by_dir: true, verbosity: Verbosity::Regular, ..ViewOptions::default() };
 		let mut buf = Vec::new();
-		write_output(format, &results, &[PathBuf::from(".")], options, &mut buf).unwrap();
-		String::from_utf8(buf).unwrap()
-	}
-
-	#[test]
-	fn by_dir_replaces_the_language_breakdown_in_every_format() {
-		for format in [OutputFormat::Csv, OutputFormat::Tsv, OutputFormat::Markdown, OutputFormat::Html] {
-			for verbosity in [Verbosity::Regular, Verbosity::Verbose] {
-				let output = render(format, verbosity);
-				let context = format!("{format:?} {verbosity:?}:\n{output}");
-				assert!(output.to_lowercase().contains("director"), "no directory breakdown in {context}");
-				assert!(output.contains("src") && output.contains("tests"), "directories missing in {context}");
-				assert!(
-					!output.contains("Average Lines") && !output.contains("avg_lines"),
-					"language table in {context}"
-				);
-				let lists_files = output.contains("src/main.rs");
-				assert_eq!(lists_files, verbosity == Verbosity::Verbose, "file listing in {context}");
-			}
-		}
-	}
-
-	#[test]
-	fn markdown_tables_are_not_split_by_blank_lines() {
-		for by_dir in [false, true] {
-			let options = ViewOptions { by_dir, verbosity: Verbosity::Verbose, ..ViewOptions::default() };
-			let output = render_with(OutputFormat::Markdown, options);
-			let lines: Vec<_> = output.lines().collect();
-			let separators: Vec<_> = (0..lines.len()).filter(|&i| lines[i].starts_with("| ---")).collect();
-			assert_eq!(separators.len(), if by_dir { 3 } else { 2 }, "{output}");
-			for i in separators {
-				assert!(
-					lines.get(i + 1).is_some_and(|row| row.starts_with('|')),
-					"table split after line {i}:\n{output}"
-				);
-			}
-			assert!(output.ends_with("|\n"), "output should end with one newline:\n{output}");
-		}
-	}
-
-	#[test]
-	fn quiet_markdown_and_html_show_only_the_summary() {
-		for format in [OutputFormat::Markdown, OutputFormat::Html] {
-			for by_dir in [false, true] {
-				let options = ViewOptions { by_dir, verbosity: Verbosity::Summary, ..ViewOptions::default() };
-				let output = render_with(format, options);
-				assert!(output.contains("Files: 2"), "{format:?} missing summary:\n{output}");
-				for absent in ["No recognized", "Languages", "Directories"] {
-					assert!(!output.contains(absent), "{format:?} shows {absent:?} with -q:\n{output}");
-				}
-			}
-		}
+		HumanFormatter.write_output(&results, &[PathBuf::from(".")], options, &mut buf).unwrap();
+		let output = String::from_utf8(buf).unwrap();
+		assert!(output.contains("Directory breakdown:"), "{output}");
+		assert!(output.contains("src") && output.contains("tests"), "{output}");
+		assert!(!output.contains("Language breakdown:"), "{output}");
 	}
 }

@@ -42,10 +42,10 @@ fn by_dir_sorts_directories_by_file_count() {
 	for name in ["a.rs", "b.rs", "c.rs"] {
 		fs::write(root.join("many").join(name), "fn f() {}\n").unwrap();
 	}
-	let output = cs().arg(&root).args(["-D", "-s", "files", "-o", "csv"]).output().unwrap();
+	let output = cs().arg(&root).args(["-D", "-s", "files", "-o", "json"]).output().unwrap();
 	assert!(output.status.success());
-	let csv = String::from_utf8(output.stdout).unwrap();
-	let dirs: Vec<_> = csv.lines().skip(1).map(|row| row.split(',').next().unwrap()).collect();
+	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+	let dirs: Vec<&str> = report["directories"].as_array().unwrap().iter().map(|dir| dir["name"].as_str().unwrap()).collect();
 	assert_eq!(dirs, ["many", "long"]);
 }
 
@@ -55,8 +55,7 @@ fn invalid_value_names_the_option_and_suggests_one() {
 	assert!(!output.status.success());
 	let stderr = String::from_utf8(output.stderr).unwrap();
 	assert!(stderr.contains("'--output <OUTPUT>'"), "{stderr}");
-	assert!(stderr.contains("possible values: human, json"), "{stderr}");
-	assert!(stderr.contains("'html'"), "{stderr}");
+	assert!(stderr.contains("possible values: human, json, json-compact"), "{stderr}");
 }
 
 #[test]
@@ -220,14 +219,20 @@ fn several_paths_are_counted_together_once() {
 		fs::write(root.join(dir).join("main.rs"), "fn main() {}\n").unwrap();
 	}
 	// `a` given twice and `a/main.rs` inside it are counted once; files are told apart by the path they were reached by.
-	let output = cs().current_dir(&root).args(["a", "b", "a", "a/main.rs", "-v", "-o", "csv"]).output().unwrap();
+	let output = cs().current_dir(&root).args(["a", "b", "a", "a/main.rs", "-v", "-o", "json"]).output().unwrap();
 	assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
-	let csv = String::from_utf8(output.stdout).unwrap();
-	let mut files: Vec<_> =
-		csv.lines().filter(|row| row.contains("main.rs")).map(|row| row.replace('\\', "/")).collect();
+	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+	let mut files: Vec<String> = report["languages"]
+		.as_array()
+		.unwrap()
+		.iter()
+		.flat_map(|lang| {
+			lang["files"].as_array().unwrap().iter().map(|file| file["path"].as_str().unwrap().replace('\\', "/")).collect::<Vec<_>>()
+		})
+		.collect();
 	files.sort_unstable();
-	assert_eq!(files.len(), 2, "{csv}");
-	assert!(files[0].starts_with("a/main.rs") && files[1].starts_with("b/main.rs"), "{csv}");
+	assert_eq!(files.len(), 2, "{report}");
+	assert!(files[0].starts_with("a/main.rs") && files[1].starts_with("b/main.rs"), "{report}");
 }
 
 #[test]
@@ -363,16 +368,6 @@ fn an_unknown_language_is_warned_about() {
 	assert_eq!(warnings("--lang", "RUST"), "");
 }
 
-#[cfg(unix)]
-#[test]
-fn markdown_rows_survive_a_line_break_in_a_file_name() {
-	let root = scratch_dir("markdown_rows_survive_a_line_break_in_a_file_name");
-	fs::write(root.join("a\nb.rs"), "fn main() {}\n").unwrap();
-	let output = cs().arg(&root).args(["-v", "-o", "markdown"]).output().unwrap();
-	let report = String::from_utf8(output.stdout).unwrap();
-	assert!(report.contains("| a b.rs | 1 |"), "{report}");
-}
-
 #[test]
 fn one_line_is_not_written_as_lines() {
 	let root = scratch_dir("one_line_is_not_written_as_lines");
@@ -392,16 +387,10 @@ fn hidden_languages_are_mentioned_in_every_report() {
 		let output = cs().arg(&root).args(args).output().unwrap();
 		String::from_utf8(output.stdout).unwrap()
 	};
-	for format in ["markdown", "html"] {
-		assert!(report(&["-o", format, "-t", "1"]).contains("1 language not shown."), "{format}");
-		let all_hidden = report(&["-o", format, "--min-lines", "9"]);
-		assert!(all_hidden.contains("2 languages not shown."), "{all_hidden}");
-		assert!(!all_hidden.contains("No recognized"), "{all_hidden}");
-	}
 	let all_hidden = report(&["--min-lines", "9"]);
 	assert!(all_hidden.contains("(2 languages not shown)"), "{all_hidden}");
 	assert!(!all_hidden.contains("No recognized"), "{all_hidden}");
-	assert!(report(&["--by-dir", "-o", "markdown", "--min-lines", "9"]).contains("1 directory not shown."));
+	assert!(report(&["--by-dir", "--min-lines", "9"]).contains("(1 directory not shown)"));
 }
 
 #[test]
@@ -420,8 +409,6 @@ fn paths_from_standard_input_are_titled_in_words() {
 		String::from_utf8(child.wait_with_output().unwrap().stdout).unwrap()
 	};
 	assert!(report("human").starts_with("Codestats for standard input:"));
-	assert!(report("markdown").contains("Codestats for `standard input`"));
-	assert!(report("html").contains("Codestats for standard input"));
 	assert!(report("json-compact").contains(r#""paths":["-"]"#));
 }
 

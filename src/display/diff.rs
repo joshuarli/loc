@@ -1,4 +1,4 @@
-//! Output for `cs diff`: each language's counts in two versions, side by side, in every format.
+//! Output for `cs diff`: each language's counts in two versions, side by side, as text or JSON.
 
 use std::{cmp::Reverse, fmt::Write as _, io::Write, path::Path};
 
@@ -172,10 +172,6 @@ pub fn write_diff(
 		OutputFormat::Human => write_human(&diff, &ctx, writer),
 		OutputFormat::Json => write_json(&diff, options, writer, true),
 		OutputFormat::JsonCompact => write_json(&diff, options, writer, false),
-		OutputFormat::Csv => write_separated(&diff, b',', writer),
-		OutputFormat::Tsv => write_separated(&diff, b'\t', writer),
-		OutputFormat::Markdown => write_markdown(&diff, &ctx, writer),
-		OutputFormat::Html => write_html(&diff, &ctx, writer),
 	}
 }
 
@@ -266,117 +262,4 @@ fn write_json(diff: &Diff, options: ViewOptions, writer: &mut dyn Write, pretty:
 	super::json::write_value(&json, options, writer, pretty)
 }
 
-fn write_separated(diff: &Diff, delimiter: u8, writer: &mut dyn Write) -> Result<()> {
-	let delimiter = char::from(delimiter);
-	let mut header = vec!["language".to_owned()];
-	for field in ["files", "lines", "code_lines", "comment_lines", "blank_lines", "shebang_lines", "bytes"] {
-		header.extend([format!("{field}_from"), format!("{field}_to")]);
-	}
-	writeln!(writer, "{}", header.join(&delimiter.to_string()))?;
-	let mut write_row = |name: &str, from: Side, to: Side| -> Result<()> {
-		let values = |side: Side| {
-			[
-				side.file_count,
-				side.lines.total,
-				side.lines.code,
-				side.lines.comment,
-				side.lines.blank,
-				side.lines.shebang,
-				side.bytes,
-			]
-		};
-		let mut fields = vec![name.to_owned()];
-		for (from, to) in values(from).into_iter().zip(values(to)) {
-			fields.extend([from.to_string(), to.to_string()]);
-		}
-		writeln!(writer, "{}", fields.join(&delimiter.to_string()))?;
-		Ok(())
-	};
-	write_row("(total)", diff.totals.0, diff.totals.1)?;
-	for row in &diff.rows {
-		write_row(row.name, row.from.unwrap_or_default(), row.to.unwrap_or_default())?;
-	}
-	Ok(())
-}
 
-/// The table both Markdown and HTML show: a header and one row of cells per language, starting with the totals.
-fn table(diff: &Diff, ctx: &FormatterContext) -> (Vec<&'static str>, Vec<Vec<String>>) {
-	let header = vec!["Language", "Files", "Lines", "Code", "Comments", "Blanks", "Size"];
-	let row = |name: String, from: Side, to: Side| {
-		let mut cells =
-			vec![name, cell(ctx, from.file_count, to.file_count), cell(ctx, from.lines.total, to.lines.total)];
-		cells.extend(LINE_TYPES[..3].iter().map(|&kind| cell(ctx, from.lines.get(kind), to.lines.get(kind))));
-		cells.push(size_cell(ctx, from.bytes, to.bytes));
-		cells
-	};
-	let mut rows = vec![row("Total".to_owned(), diff.totals.0, diff.totals.1)];
-	rows.extend(
-		diff.rows
-			.iter()
-			.map(|r| row(format!("{}{}", r.name, r.status()), r.from.unwrap_or_default(), r.to.unwrap_or_default())),
-	);
-	(header, rows)
-}
-
-fn write_markdown(diff: &Diff, ctx: &FormatterContext, writer: &mut dyn Write) -> Result<()> {
-	let escape = |text: &str| text.replace('|', "\\|");
-	writeln!(writer, "# Codestats diff for `{}`\n", diff.path)?;
-	writeln!(writer, "From `{}` to {}.\n", diff.from_name, diff.to_description())?;
-	let (header, rows) = table(diff, ctx);
-	writeln!(writer, "| {} |", header.join(" | "))?;
-	writeln!(writer, "| --- |{}", " ---: |".repeat(header.len() - 1))?;
-	for row in rows {
-		writeln!(writer, "| {} |", row.iter().map(|cell| escape(cell)).collect::<Vec<_>>().join(" | "))?;
-	}
-	if diff.hidden > 0 {
-		writeln!(
-			writer,
-			"\n_{} more {} not shown._",
-			diff.hidden,
-			pluralize(diff.hidden as u64, "language", "languages")
-		)?;
-	}
-	Ok(())
-}
-
-fn write_html(diff: &Diff, ctx: &FormatterContext, writer: &mut dyn Write) -> Result<()> {
-	let escape =
-		|text: &str| text.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;");
-	let title = format!("Codestats diff for {}", escape(&diff.path));
-	let to =
-		diff.to_name.map_or_else(|| "the working tree".to_owned(), |name| format!("<code>{}</code>", escape(name)));
-	writeln!(writer, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n\t<meta charset=\"utf-8\" />")?;
-	writeln!(
-		writer,
-		"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\t<title>{title}</title>\n</head>"
-	)?;
-	writeln!(
-		writer,
-		"<body>\n\t<h1>{title}</h1>\n\t<p>From <code>{}</code> to {to}.</p>\n\t<table>",
-		escape(diff.from_name)
-	)?;
-	let (header, rows) = table(diff, ctx);
-	write!(writer, "\t\t<tr>")?;
-	for heading in &header {
-		write!(writer, "<th>{heading}</th>")?;
-	}
-	writeln!(writer, "</tr>")?;
-	for row in rows {
-		write!(writer, "\t\t<tr>")?;
-		for cell in &row {
-			write!(writer, "<td>{}</td>", escape(cell))?;
-		}
-		writeln!(writer, "</tr>")?;
-	}
-	writeln!(writer, "\t</table>")?;
-	if diff.hidden > 0 {
-		writeln!(
-			writer,
-			"\t<p>{} more {} not shown.</p>",
-			diff.hidden,
-			pluralize(diff.hidden as u64, "language", "languages")
-		)?;
-	}
-	writeln!(writer, "</body>\n</html>")?;
-	Ok(())
-}

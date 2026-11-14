@@ -15,48 +15,6 @@ use crate::{
 	},
 };
 
-macro_rules! impl_formatters {
-	($type:ty {
-		$($method_name:ident => $($field:ident).+ : $formatter:ident),* $(,)?
-	}) => {
-		impl $type {
-			$(
-				#[must_use]
-				pub fn $method_name(&self, ctx: &FormatterContext) -> String {
-					ctx.$formatter(self.$($field).+)
-				}
-			)*
-		}
-	};
-}
-
-/// `format_*_percentage` methods for a record's `counts`.
-macro_rules! impl_percentages {
-	($type:ty) => {
-		impl $type {
-			#[must_use]
-			pub fn format_code_percentage(&self, ctx: &FormatterContext) -> String {
-				ctx.percent(self.counts.percentage(LineType::Code))
-			}
-
-			#[must_use]
-			pub fn format_comment_percentage(&self, ctx: &FormatterContext) -> String {
-				ctx.percent(self.counts.percentage(LineType::Comment))
-			}
-
-			#[must_use]
-			pub fn format_blank_percentage(&self, ctx: &FormatterContext) -> String {
-				ctx.percent(self.counts.percentage(LineType::Blank))
-			}
-
-			#[must_use]
-			pub fn format_shebang_percentage(&self, ctx: &FormatterContext) -> String {
-				ctx.percent(self.counts.percentage(LineType::Shebang))
-			}
-		}
-	};
-}
-
 #[derive(Debug)]
 pub struct ReportData<'a> {
 	/// The paths counted.
@@ -69,7 +27,7 @@ pub struct ReportData<'a> {
 }
 
 impl<'a> ReportData<'a> {
-	/// What the report is about, in words. CSV, TSV, and JSON keep the path as given.
+	/// What the report is about, in words. JSON keeps the path as given.
 	#[must_use]
 	pub fn title(&self) -> Cow<'_, str> {
 		match &self.analysis_paths[..] {
@@ -77,17 +35,6 @@ impl<'a> ReportData<'a> {
 			[path] => Cow::Borrowed(path),
 			paths => Cow::Owned(paths.join(", ")),
 		}
-	}
-
-	/// A sentence saying how many entries `--top-languages` and `--min-lines` left out of the breakdown.
-	#[must_use]
-	pub fn hidden_note(&self, by_dir: bool) -> Option<String> {
-		let (count, singular, plural) = if by_dir {
-			(self.dirs_hidden?, "directory", "directories")
-		} else {
-			(self.languages_hidden?, "language", "languages")
-		};
-		Some(format!("{count} {} not shown.", pluralize_fn(count as u64, singular, plural)))
 	}
 
 	#[must_use]
@@ -125,28 +72,6 @@ impl<'a> ReportData<'a> {
 		}
 	}
 
-	/// Each shown language's embedded code, one row per language embedded in it.
-	#[must_use]
-	pub fn embedded_rows(&self) -> Vec<EmbeddedRow<'_>> {
-		self.languages
-			.iter()
-			.flat_map(|language| {
-				language.embedded.iter().map(|embedded| EmbeddedRow {
-					name: embedded.name,
-					host: language.name,
-					counts: embedded.counts,
-				})
-			})
-			.collect()
-	}
-}
-
-/// Lines of language `name` embedded in files of language `host`.
-#[derive(Debug)]
-pub struct EmbeddedRow<'a> {
-	pub name: &'static str,
-	pub host: &'a str,
-	pub counts: LineCounts,
 }
 
 /// Lines of one language embedded in a language's or file's code. Serializes as it appears in JSON.
@@ -173,14 +98,6 @@ pub struct Summary {
 	pub counts: LineCounts,
 	pub total_size: u64,
 	pub total_size_human: String,
-}
-
-#[derive(Debug)]
-pub struct SummaryMetric<'a> {
-	pub label: &'static str,
-	pub value: u64,
-	pub percentage: Option<f64>,
-	pub human_readable: Option<&'a str>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -234,29 +151,6 @@ impl Summary {
 			.collect()
 	}
 
-	pub fn metrics(&self) -> impl Iterator<Item = SummaryMetric<'_>> {
-		let line_metric = |label, kind| SummaryMetric {
-			label,
-			value: self.counts.get(kind),
-			percentage: Some(self.counts.percentage(kind)),
-			human_readable: None,
-		};
-		[
-			SummaryMetric { label: "Total Files", value: self.total_files, percentage: None, human_readable: None },
-			SummaryMetric { label: "Total Lines", value: self.counts.total, percentage: None, human_readable: None },
-			line_metric("Code Lines", LineType::Code),
-			line_metric("Comment Lines", LineType::Comment),
-			line_metric("Blank Lines", LineType::Blank),
-			line_metric("Shebang Lines", LineType::Shebang),
-			SummaryMetric {
-				label: "Total Size",
-				value: self.total_size,
-				percentage: None,
-				human_readable: Some(self.total_size_human.as_str()),
-			},
-		]
-		.into_iter()
-	}
 }
 
 /// The value to order a row by for `key`. Rows without a file count (single files) sort by name for `Files`.
@@ -350,17 +244,6 @@ impl<'a> LanguageRecord<'a> {
 	}
 }
 
-impl_formatters!(LanguageRecord<'_> {
-	format_files => files : number,
-	format_lines => counts.total : number,
-	format_code_lines => counts.code : number,
-	format_comment_lines => counts.comment : number,
-	format_blank_lines => counts.blank : number,
-	format_shebang_lines => counts.shebang : number,
-	format_size => size : number,
-	format_size_human => size : size,
-});
-
 /// One file's counts. Serializes as it appears in JSON.
 #[derive(Debug, Serialize)]
 pub struct FileRecord<'a> {
@@ -383,30 +266,6 @@ impl<'a> FileRecord<'a> {
 		}
 	}
 }
-
-impl_percentages!(LanguageRecord<'_>);
-impl_percentages!(DirRecord<'_>);
-
-impl_formatters!(FileRecord<'_> {
-	format_total_lines => counts.total : number,
-	format_code_lines => counts.code : number,
-	format_comment_lines => counts.comment : number,
-	format_blank_lines => counts.blank : number,
-	format_shebang_lines => counts.shebang : number,
-	format_size => size : number,
-	format_size_human => size : size,
-});
-
-impl_formatters!(DirRecord<'_> {
-	format_files => files : number,
-	format_lines => counts.total : number,
-	format_code_lines => counts.code : number,
-	format_comment_lines => counts.comment : number,
-	format_blank_lines => counts.blank : number,
-	format_shebang_lines => counts.shebang : number,
-	format_size => size : number,
-	format_size_human => size : size,
-});
 
 /// The first directory under `root` that `file_path` is in, or `(root)`.
 fn dir_key<'a>(file_path: &'a str, root: &Path) -> &'a str {
@@ -509,37 +368,6 @@ mod tests {
 		let ctx = FormatterContext::new(ViewOptions::default());
 		let parts = summary.percentage_parts(&ctx);
 		assert_eq!(parts, vec!["50.0% code", "20.0% comments", "30.0% blanks"]);
-	}
-
-	#[test]
-	fn summary_metrics_returns_all_fields() {
-		let summary = summary(10, [100, 60, 20, 15, 5], 4096, "4.0 KiB");
-		let metrics: Vec<_> = summary.metrics().collect();
-		assert_eq!(metrics.len(), 7);
-		let labels: Vec<&str> = metrics.iter().map(|m| m.label).collect();
-		assert_eq!(
-			labels,
-			vec![
-				"Total Files",
-				"Total Lines",
-				"Code Lines",
-				"Comment Lines",
-				"Blank Lines",
-				"Shebang Lines",
-				"Total Size",
-			]
-		);
-		// First two metrics (Total Files, Total Lines) have no percentage
-		assert!(metrics[0].percentage.is_none());
-		assert!(metrics[1].percentage.is_none());
-		// Line-type metrics have percentages
-		assert_eq!(metrics[2].percentage, Some(60.0));
-		assert_eq!(metrics[3].percentage, Some(20.0));
-		assert_eq!(metrics[4].percentage, Some(15.0));
-		assert_eq!(metrics[5].percentage, Some(5.0));
-		// Total Size has human_readable
-		assert_eq!(metrics[6].human_readable, Some("4.0 KiB"));
-		assert!(metrics[6].percentage.is_none());
 	}
 
 	#[test]
