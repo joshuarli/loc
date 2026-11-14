@@ -1,5 +1,5 @@
-counter = "codestats"
-version = "codestats 1.1.0"
+counter = "loc"
+version = "loc 1.1.1 (git 0727e21b1249)"
 measured-with = "linejudge 0.4.0"
 
 [answer.1010-code_then_comment_on_one_line.default]

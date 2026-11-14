@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Finds files where codestats probably miscounts: other counters agree with each other, but not with codestats.
+"""Finds files where loc probably miscounts: other counters agree with each other, but not with loc.
 
 Each reference counter (tokei, scc and cloc, whichever are installed) counts every file. When at least two of them
-agree on a file's code, comment and blank lines and codestats differs, the file is flagged. Two independent tools
-agreeing makes a codestats bug likely, though they can share a mistake, so flagged files still need a look.
+agree on a file's code, comment and blank lines and loc differs, the file is flagged. Two independent tools
+agreeing makes a loc bug likely, though they can share a mistake, so flagged files still need a look.
 
-Differences that are codestats' conventions rather than mistakes are left out: shebang lines are folded into comments,
-and whitespace-only lines inside comments and strings, which codestats counts as blank, are allowed for.
+Differences that are loc's conventions rather than mistakes are left out: shebang lines are folded into comments,
+and whitespace-only lines inside comments and strings, which loc counts as blank, are allowed for.
 
-    scripts/vote.py CODESTATS DIR... [--cloc PATH] [--examples FILE]
+    scripts/vote.py LOC DIR... [--cloc PATH] [--examples FILE]
 
 Prints the flagged files per language, most first, and optionally writes examples as JSON.
 """
@@ -21,7 +21,7 @@ import subprocess
 from collections import defaultdict
 
 
-def codestats(binary, repo):
+def loc(binary, repo):
 	report = json.loads(subprocess.run([binary, repo, "-v", "-o", "json-compact"], capture_output=True, check=True).stdout)
 	files = {}
 	for language in report["languages"]:
@@ -68,7 +68,7 @@ def only_blank_convention(ours, theirs):
 
 def main():
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-	parser.add_argument("codestats")
+	parser.add_argument("loc")
 	parser.add_argument("directories", nargs="+")
 	parser.add_argument("--cloc", default=shutil.which("cloc"), help="path to cloc, if it isn't on PATH")
 	parser.add_argument("--examples", help="write up to 30 flagged files per language as JSON")
@@ -84,7 +84,7 @@ def main():
 	agreements = defaultdict(int)
 	for directory in args.directories:
 		repo = os.path.realpath(directory)
-		ours = codestats(args.codestats, repo)
+		ours = loc(args.loc, repo)
 		theirs = {name: count(repo) for name, count in references.items()}
 		for path, (language, counts) in ours.items():
 			answers = {name: files[path] for name, files in theirs.items() if path in files}
@@ -94,11 +94,11 @@ def main():
 			majority, voters = max(votes.items(), key=lambda item: len(item[1]), default=(None, []))
 			if len(voters) < 2 or counts == majority or only_blank_convention(counts, majority):
 				continue
-			flagged[language].append({"path": path, "codestats": counts, "others": majority, "agreeing": voters})
+			flagged[language].append({"path": path, "loc": counts, "others": majority, "agreeing": voters})
 			agreements["+".join(sorted(voters))] += 1
 	print(f"{'language':<24} {'files':>6} {'code':>9} {'comment':>9} {'blank':>8}")
 	for language, files in sorted(flagged.items(), key=lambda item: -len(item[1])):
-		code, comment, blank = (sum(file["codestats"][i] - file["others"][i] for file in files) for i in range(3))
+		code, comment, blank = (sum(file["loc"][i] - file["others"][i] for file in files) for i in range(3))
 		print(f"{language:<24} {len(files):6} {code:+9} {comment:+9} {blank:+8}")
 	print("\nagreeing references: " + ", ".join(f"{names} {count}" for names, count in sorted(agreements.items(), key=lambda item: -item[1])))
 	if args.examples:

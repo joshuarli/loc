@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measures how much work codestats does per language, to find slow languages and catch regressions.
+"""Measures how much work loc does per language, to find slow languages and catch regressions.
 
 Work is counted in user-space instructions (`perf stat -e instructions:u`), which barely vary between runs, unlike wall time.
 A language's cost in a repository is the instructions for counting only that language (`-L`) minus those for a run that
@@ -31,7 +31,7 @@ ABSENT = ["Brainfuck", "Befunge", "Whitespace", "LOLCODE", "Malbolge"]
 
 
 def run(binary, directory, *args):
-	"""Runs codestats with JSON output and returns (instructions, report)."""
+	"""Runs loc with JSON output and returns (instructions, report)."""
 	with tempfile.NamedTemporaryFile("r", suffix=".perf") as stat:
 		result = subprocess.run(
 			["perf", "stat", "-x,", "-e", "instructions:u", "-o", stat.name, "--", binary, directory, "-o", "json-compact", *args],

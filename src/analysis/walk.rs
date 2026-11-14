@@ -387,7 +387,7 @@ mod tests {
 	impl Tree {
 		fn new(files: &[(&str, &str)]) -> Self {
 			let unique = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
-			let root = std::env::temp_dir().join(format!("codestats_walk_test_{}_{unique}", std::process::id()));
+			let root = std::env::temp_dir().join(format!("loc_walk_test_{}_{unique}", std::process::id()));
 			for (path, contents) in files {
 				let path = root.join(path);
 				fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -554,7 +554,7 @@ mod tests {
 	#[test]
 	fn a_missing_root_is_an_error() {
 		let errors = AtomicUsize::new(0);
-		walk(Path::new("/nonexistent/codestats/walk/test"), defaults(), &|| {
+		walk(Path::new("/nonexistent/loc/walk/test"), defaults(), &|| {
 			|entry: Result<Entry, Error>| {
 				assert!(entry.is_err());
 				errors.fetch_add(1, Ordering::Relaxed);

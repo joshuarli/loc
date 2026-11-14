@@ -1,5 +1,5 @@
-name   = "codestats"
-repository = "https://github.com/trypsynth/codestats"
+name   = "loc"
+repository = "https://github.com/joshuarli/loc"
 args   = ["{file}", "--output", "json-compact", "--include-generated", "--no-gitignore", "--hidden"]
 
 [variation.default]

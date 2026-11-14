@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Real-process benchmarks: startup and first-use costs that warm in-process benchmarks hide. Times the release binary on an empty directory, a single file, the fixture tree, and an 800-file generated Rust corpus.
-# Usage: [CS=<binary>] scripts/bench-process.sh [scratch directory]
+# Usage: [LOC=<binary>] scripts/bench-process.sh [scratch directory]
 
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -9,10 +9,10 @@ case "${1:-$root/.work/bench-process}" in
 	*) work=$PWD/$1;;
 esac
 mkdir -p "$work"
-cs=${CS:-}
-if [[ -z $cs ]]; then
+loc=${LOC:-}
+if [[ -z $loc ]]; then
 	cargo build --release --quiet --manifest-path "$root/Cargo.toml"
-	cs=$root/target/release/cs
+	loc=$root/target/release/loc
 fi
 
 mkdir -p "$work/empty"
@@ -32,7 +32,7 @@ if [[ ! -d $gen ]]; then
 fi
 
 hyperfine -N --warmup 3 --runs 20 \
-	-n empty "\"$cs\" \"$work/empty\"" \
-	-n one-file "\"$cs\" \"$work/one.rs\"" \
-	-n fixtures "\"$cs\" \"$root/tests/fixtures\"" \
-	-n generated-800 "\"$cs\" \"$gen\""
+	-n empty "\"$loc\" \"$work/empty\"" \
+	-n one-file "\"$loc\" \"$work/one.rs\"" \
+	-n fixtures "\"$loc\" \"$root/tests/fixtures\"" \
+	-n generated-800 "\"$loc\" \"$gen\""

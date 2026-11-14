@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetches the repositories codestats is checked against for speed and accuracy, each at a pinned commit.
+# Fetches the repositories loc is checked against for speed and accuracy, each at a pinned commit.
 # They're picked so that each is dominated by a different kind of file: a language, translations, documentation, data, notebooks, huge files or masses of tiny ones.
 # Usage: scripts/corpus.sh [clone directory]. Prints the directory of each repository, one per line.
 

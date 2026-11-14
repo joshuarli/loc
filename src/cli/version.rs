@@ -1,11 +1,11 @@
-pub const GIT_SHA: &str = env!("CODESTATS_GIT_SHA");
+pub const GIT_SHA: &str = env!("LOC_GIT_SHA");
 
 pub fn version_line() -> String {
 	fmt_version(env!("CARGO_PKG_VERSION"), GIT_SHA)
 }
 
 fn fmt_version(version: &str, sha: &str) -> String {
-	format!("cs {version} (git {sha})")
+	format!("loc {version} (git {sha})")
 }
 
 #[cfg(test)]

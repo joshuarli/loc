@@ -1,4 +1,4 @@
-//! Locates a `.codestats.toml`/`config.toml` on the local filesystem.
+//! Locates a `.loc.toml`/`config.toml` on the local filesystem.
 //!
 //! Searching the user's home directory and XDG dirs is only meaningful for a
 //! command-line front end, not for analysis of an already located tree.
@@ -33,10 +33,10 @@ fn config_dir() -> Option<PathBuf> {
 /// Search the current directory, XDG/platform config dir, and home directory for a config file.
 #[must_use]
 pub fn find_config_file() -> Option<PathBuf> {
-	[PathBuf::from(".codestats.toml"), PathBuf::from("codestats.toml")]
+	[PathBuf::from(".loc.toml"), PathBuf::from("loc.toml")]
 		.into_iter()
-		.chain(config_dir().map(|d| d.join("codestats").join("config.toml")))
-		.chain(home_dir().map(|h| h.join(".codestats.toml")))
+		.chain(config_dir().map(|d| d.join("loc").join("config.toml")))
+		.chain(home_dir().map(|h| h.join(".loc.toml")))
 		.find(|path| path.is_file())
 }
 

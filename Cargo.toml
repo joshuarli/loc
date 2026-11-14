@@ -1,11 +1,11 @@
 [package]
-name = "codestats"
+name = "laputa-loc"
 version = "1.1.1"
 authors = ["Quin Gillespie <trypsynth@gmail.com>"]
 edition = "2024"
 description = "The fastest and most accurate code counter around: code, comment, blank, and shebang lines by language, as text or JSON"
 readme = "README.md"
-repository = "https://github.com/trypsynth/codestats"
+repository = "https://github.com/joshuarli/loc"
 license = "MIT"
 keywords = ["code", "analysis", "cli", "statistics"]
 categories = ["command-line-utilities", "development-tools", "filesystem"]
@@ -13,7 +13,7 @@ rust-version = "1.88.0"
 include = ["/src", "/build.rs", "/build", "/benches", "/languages.json5", "/README.md", "/LICENSE"]
 
 [[bin]]
-name = "cs"
+name = "loc"
 path = "src/main.rs"
 
 [lib]

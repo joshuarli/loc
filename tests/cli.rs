@@ -5,8 +5,8 @@ use std::{
 	process::{Command, Stdio},
 };
 
-fn cs() -> Command {
-	Command::new(env!("CARGO_BIN_EXE_cs"))
+fn loc() -> Command {
+	Command::new(env!("CARGO_BIN_EXE_loc"))
 }
 
 fn fixtures() -> PathBuf {
@@ -24,8 +24,8 @@ fn scratch_dir(name: &str) -> PathBuf {
 #[test]
 fn closed_stdout_exits_quietly() {
 	let mut child =
-		cs().arg(fixtures()).args(["-v", "-o", "json"]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
-	// Close the reading end before codestats writes anything, as `cs | head -0` would.
+		loc().arg(fixtures()).args(["-v", "-o", "json"]).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+	// Close the reading end before loc writes anything, as `loc | head -0` would.
 	drop(child.stdout.take());
 	let output = child.wait_with_output().unwrap();
 	assert!(output.status.success(), "exit status {:?}", output.status);
@@ -42,7 +42,7 @@ fn by_dir_sorts_directories_by_file_count() {
 	for name in ["a.rs", "b.rs", "c.rs"] {
 		fs::write(root.join("many").join(name), "fn f() {}\n").unwrap();
 	}
-	let output = cs().arg(&root).args(["-D", "-s", "files", "-o", "json"]).output().unwrap();
+	let output = loc().arg(&root).args(["-D", "-s", "files", "-o", "json"]).output().unwrap();
 	assert!(output.status.success());
 	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	let dirs: Vec<&str> = report["directories"].as_array().unwrap().iter().map(|dir| dir["name"].as_str().unwrap()).collect();
@@ -51,7 +51,7 @@ fn by_dir_sorts_directories_by_file_count() {
 
 #[test]
 fn invalid_value_names_the_option_and_suggests_one() {
-	let output = cs().args(["-o", "xml"]).output().unwrap();
+	let output = loc().args(["-o", "xml"]).output().unwrap();
 	assert!(!output.status.success());
 	let stderr = String::from_utf8(output.stderr).unwrap();
 	assert!(stderr.contains("'--output <OUTPUT>'"), "{stderr}");
@@ -70,7 +70,7 @@ fn git_counts_only_tracked_files() {
 	git(&["add", "src/tracked.rs", "top.py"]);
 	fs::write(root.join("src").join("untracked.rs"), "fn f() {}\n").unwrap();
 	let files = |args: &[&str]| {
-		let output = cs().args(args).args(["-v", "-o", "json"]).output().unwrap();
+		let output = loc().args(args).args(["-v", "-o", "json"]).output().unwrap();
 		assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		let mut paths: Vec<String> = report["languages"]
@@ -99,12 +99,12 @@ fn git_counts_only_tracked_files() {
 fn git_outside_a_repository_is_an_error() {
 	let root = scratch_dir("git_outside_a_repository_is_an_error");
 	fs::write(root.join("a.rs"), "fn main() {}\n").unwrap();
-	let output = cs().arg(&root).arg("--git").env("GIT_CEILING_DIRECTORIES", root.parent().unwrap()).output().unwrap();
+	let output = loc().arg(&root).arg("--git").env("GIT_CEILING_DIRECTORIES", root.parent().unwrap()).output().unwrap();
 	assert!(!output.status.success());
 	assert!(String::from_utf8(output.stderr).unwrap().contains("--git: not a git repository"));
 }
 
-/// A repository with two commits and uncommitted changes, for `cs diff`.
+/// A repository with two commits and uncommitted changes, for `loc diff`.
 fn diff_repo(name: &str) -> PathBuf {
 	let root = scratch_dir(name);
 	let git = |args: &[&str]| {
@@ -136,7 +136,7 @@ fn diff_repo(name: &str) -> PathBuf {
 }
 
 fn diff_json(root: &Path, args: &[&str]) -> serde_json::Value {
-	let output = cs().arg("diff").args(args).arg(root).args(["-o", "json"]).output().unwrap();
+	let output = loc().arg("diff").args(args).arg(root).args(["-o", "json"]).output().unwrap();
 	assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 	serde_json::from_slice(&output.stdout).unwrap()
 }
@@ -186,7 +186,7 @@ fn diff_applies_filters_and_paths_to_both_sides() {
 	let names: Vec<_> =
 		rust_only["languages"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap()).collect();
 	assert_eq!(names, ["Rust"]);
-	let output = cs().arg("diff").arg("one").arg(root.join("src")).args(["-o", "json"]).output().unwrap();
+	let output = loc().arg("diff").arg("one").arg(root.join("src")).args(["-o", "json"]).output().unwrap();
 	assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 	let src: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	assert!(side(&src, "Python", "from").is_none(), "tool.py is outside src/");
@@ -196,11 +196,11 @@ fn diff_applies_filters_and_paths_to_both_sides() {
 #[test]
 fn diff_reports_unknown_revisions_and_non_repositories() {
 	let root = diff_repo("diff_errors");
-	let output = cs().arg("diff").arg("no-such-revision").arg(&root).output().unwrap();
+	let output = loc().arg("diff").arg("no-such-revision").arg(&root).output().unwrap();
 	assert!(!output.status.success());
 	assert!(String::from_utf8(output.stderr).unwrap().contains("no-such-revision"));
 	let plain = scratch_dir("diff_not_a_repository");
-	let output = cs()
+	let output = loc()
 		.arg("diff")
 		.arg("HEAD")
 		.arg(&plain)
@@ -219,7 +219,7 @@ fn several_paths_are_counted_together_once() {
 		fs::write(root.join(dir).join("main.rs"), "fn main() {}\n").unwrap();
 	}
 	// `a` given twice and `a/main.rs` inside it are counted once; files are told apart by the path they were reached by.
-	let output = cs().current_dir(&root).args(["a", "b", "a", "a/main.rs", "-v", "-o", "json"]).output().unwrap();
+	let output = loc().current_dir(&root).args(["a", "b", "a", "a/main.rs", "-v", "-o", "json"]).output().unwrap();
 	assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
 	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	let mut files: Vec<String> = report["languages"]
@@ -245,7 +245,7 @@ fn files_marked_generated_are_skipped_unless_included() {
 	)
 	.unwrap();
 	let files = |extra: &[&str]| {
-		let output = cs().current_dir(&root).args(["-o", "json"]).args(extra).output().unwrap();
+		let output = loc().current_dir(&root).args(["-o", "json"]).args(extra).output().unwrap();
 		assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		report["totals"]["file_count"].as_u64().unwrap()
@@ -272,7 +272,7 @@ fn gitattributes_mark_files_from_above_and_below() {
 	}
 	fs::write(root.join("src/keep/Cargo.lock"), "version = 4\n").unwrap();
 	let files = |dir: &str, extra: &[&str]| {
-		let output = cs().current_dir(root.join(dir)).args(["-o", "json"]).args(extra).output().unwrap();
+		let output = loc().current_dir(root.join(dir)).args(["-o", "json"]).args(extra).output().unwrap();
 		assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		report["totals"]["file_count"].as_u64().unwrap()
@@ -296,7 +296,7 @@ fn paths_can_come_from_standard_input() {
 		fs::write(root.join(file), "fn main() {}\n").unwrap();
 	}
 	let count = |list: &[u8], extra: &[&str]| {
-		let mut child = cs()
+		let mut child = loc()
 			.current_dir(&root)
 			.args(["-", "-o", "json"])
 			.args(extra)
@@ -314,18 +314,18 @@ fn paths_can_come_from_standard_input() {
 	assert_eq!(count(b"src\nc.rs\nc.rs\n.hidden/d.rs\n", &[]), 3);
 	assert_eq!(count(b"c.rs\0src/a.rs\0", &[]), 2);
 	assert_eq!(count(b"src\n", &["-e", "nested"]), 1);
-	let output = cs().current_dir(&root).args(["-", "c.rs"]).output().unwrap();
+	let output = loc().current_dir(&root).args(["-", "c.rs"]).output().unwrap();
 	assert!(!output.status.success());
 }
 
 #[test]
-fn a_name_only_codestats_knows_keeps_its_language() {
-	let root = scratch_dir("a_name_only_codestats_knows_keeps_its_language");
+fn a_name_only_loc_knows_keeps_its_language() {
+	let root = scratch_dir("a_name_only_loc_knows_keeps_its_language");
 	fs::write(root.join(".gitattributes"), "*.bgt linguist-language=AngelScript\n*.pp linguist-language=Rust\n")
 		.unwrap();
 	fs::write(root.join("game.bgt"), "void main() {}\n").unwrap();
 	fs::write(root.join("pretty.pp"), "fn main() {}\n").unwrap();
-	let output = cs().current_dir(&root).args(["-o", "json"]).output().unwrap();
+	let output = loc().current_dir(&root).args(["-o", "json"]).output().unwrap();
 	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	let mut names: Vec<&str> =
 		report["languages"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap()).collect();
@@ -343,7 +343,7 @@ fn ext_counts_only_those_extensions_and_git_internals_never_count() {
 	fs::write(root.join("Cargo.toml"), "[package]\n").unwrap();
 	fs::write(root.join("build"), "#!/bin/sh\nmake\n").unwrap();
 	let files = |extra: &[&str]| {
-		let output = cs().current_dir(&root).args(["-o", "json", "--hidden"]).args(extra).output().unwrap();
+		let output = loc().current_dir(&root).args(["-o", "json", "--hidden"]).args(extra).output().unwrap();
 		assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		report["totals"]["file_count"].as_u64().unwrap()
@@ -359,7 +359,7 @@ fn an_unknown_language_is_warned_about() {
 	let root = scratch_dir("an_unknown_language_is_warned_about");
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
 	let warnings = |flag: &str, name: &str| {
-		let output = cs().arg(&root).args([flag, name, "-q"]).output().unwrap();
+		let output = loc().arg(&root).args([flag, name, "-q"]).output().unwrap();
 		assert!(output.status.success());
 		String::from_utf8(output.stderr).unwrap()
 	};
@@ -372,7 +372,7 @@ fn an_unknown_language_is_warned_about() {
 fn one_line_is_not_written_as_lines() {
 	let root = scratch_dir("one_line_is_not_written_as_lines");
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
-	let output = cs().arg(&root).arg("-v").output().unwrap();
+	let output = loc().arg(&root).arg("-v").output().unwrap();
 	let report = String::from_utf8(output.stdout).unwrap();
 	assert!(report.contains("main.rs: 1 line,"), "{report}");
 	assert!(report.contains("Code: 1 line ("), "{report}");
@@ -384,7 +384,7 @@ fn hidden_languages_are_mentioned_in_every_report() {
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
 	fs::write(root.join("main.py"), "x = 1\n").unwrap();
 	let report = |args: &[&str]| {
-		let output = cs().arg(&root).args(args).output().unwrap();
+		let output = loc().arg(&root).args(args).output().unwrap();
 		String::from_utf8(output.stdout).unwrap()
 	};
 	let all_hidden = report(&["--min-lines", "9"]);
@@ -398,7 +398,7 @@ fn paths_from_standard_input_are_titled_in_words() {
 	let root = scratch_dir("paths_from_standard_input_are_titled_in_words");
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
 	let report = |format: &str| {
-		let mut child = cs()
+		let mut child = loc()
 			.current_dir(&root)
 			.args(["-", "-q", "-o", format])
 			.stdin(Stdio::piped())
@@ -408,7 +408,7 @@ fn paths_from_standard_input_are_titled_in_words() {
 		child.stdin.take().unwrap().write_all(b"main.rs\n").unwrap();
 		String::from_utf8(child.wait_with_output().unwrap().stdout).unwrap()
 	};
-	assert!(report("human").starts_with("Codestats for standard input:"));
+	assert!(report("human").starts_with("Loc for standard input:"));
 	assert!(report("json-compact").contains(r#""paths":["-"]"#));
 }
 
@@ -423,7 +423,7 @@ fn an_xml_declaration_outweighs_a_code_extension() {
 	let big: Vec<u8> = [0xFE, 0xFF].into_iter().chain(document.encode_utf16().flat_map(u16::to_be_bytes)).collect();
 	fs::write(root.join("app_de.ts"), little).unwrap();
 	fs::write(root.join("app_fr.ts"), big).unwrap();
-	let output = cs().arg(&root).args(["-o", "json-compact", "--no-config"]).output().unwrap();
+	let output = loc().arg(&root).args(["-o", "json-compact", "--no-config"]).output().unwrap();
 	let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 	let files = |name: &str| {
 		report["languages"]
@@ -442,15 +442,15 @@ fn no_config_ignores_the_configuration_in_the_working_directory() {
 	let root = scratch_dir("no_config_ignores_the_configuration_in_the_working_directory");
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
 	fs::write(root.join("main.py"), "print(1)\n").unwrap();
-	fs::write(root.join(".codestats.toml"), "[analysis]\ninclude_languages = [\"Rust\"]\n").unwrap();
+	fs::write(root.join(".loc.toml"), "[analysis]\ninclude_languages = [\"Rust\"]\n").unwrap();
 	let files = |extra: &[&str]| {
-		let output = cs().current_dir(&root).args(["-o", "json"]).args(extra).output().unwrap();
+		let output = loc().current_dir(&root).args(["-o", "json"]).args(extra).output().unwrap();
 		assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
 		serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap()["totals"]["file_count"].as_u64().unwrap()
 	};
 	assert_eq!(files(&[]), 1);
 	assert_eq!(files(&["--no-config"]), 2);
-	let both = cs().current_dir(&root).args(["--no-config", "--config", ".codestats.toml"]).output().unwrap();
+	let both = loc().current_dir(&root).args(["--no-config", "--config", ".loc.toml"]).output().unwrap();
 	assert_eq!(both.status.code(), Some(2));
 }
 
@@ -465,7 +465,7 @@ fn project_files_visual_studio_wrote_count_as_generated() {
 	fs::write(root.join("New.csproj"), "<Project Sdk=\"Microsoft.NET.Sdk\">\n</Project>\n").unwrap();
 	fs::write(root.join("App.sln"), "Microsoft Visual Studio Solution File, Format Version 12.00\n").unwrap();
 	let files = |extra: &[&str]| {
-		let output = cs().arg(&root).args(["-o", "json-compact", "--no-config"]).args(extra).output().unwrap();
+		let output = loc().arg(&root).args(["-o", "json-compact", "--no-config"]).args(extra).output().unwrap();
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		report["totals"]["file_count"].as_u64().unwrap()
 	};
@@ -475,10 +475,10 @@ fn project_files_visual_studio_wrote_count_as_generated() {
 
 #[test]
 fn top_level_help_lists_commands_and_common_options() {
-	let output = cs().arg("--help").output().unwrap();
+	let output = loc().arg("--help").output().unwrap();
 	assert!(output.status.success());
 	let stdout = String::from_utf8(output.stdout).unwrap();
-	assert!(stdout.contains("Usage:\n  cs [OPTIONS] [PATH]...\n  cs <COMMAND>"), "{stdout}");
+	assert!(stdout.contains("Usage:\n  loc [OPTIONS] [PATH]...\n  loc <COMMAND>"), "{stdout}");
 	assert!(stdout.contains("-h, --help"), "{stdout}");
 	assert!(stdout.contains("-V, --version"), "{stdout}");
 	for command in ["langs", "diff", "init"] {
@@ -493,7 +493,7 @@ fn every_command_has_a_help_page_with_its_own_options() {
 		("langs", "List all supported programming languages"),
 		("init", "--force"),
 	] {
-		let output = cs().args([command, "--help"]).output().unwrap();
+		let output = loc().args([command, "--help"]).output().unwrap();
 		assert!(output.status.success(), "{command}");
 		let stdout = String::from_utf8(output.stdout).unwrap();
 		assert!(stdout.contains(marker), "{command}: {stdout}");
@@ -503,10 +503,10 @@ fn every_command_has_a_help_page_with_its_own_options() {
 
 #[test]
 fn version_reports_the_package_version_and_a_commit() {
-	let output = cs().arg("--version").output().unwrap();
+	let output = loc().arg("--version").output().unwrap();
 	assert!(output.status.success());
 	let stdout = String::from_utf8(output.stdout).unwrap();
-	assert!(stdout.trim_end().starts_with(concat!("cs ", env!("CARGO_PKG_VERSION"), " (git ")), "{stdout}");
+	assert!(stdout.trim_end().starts_with(concat!("loc ", env!("CARGO_PKG_VERSION"), " (git ")), "{stdout}");
 	let sha = stdout.trim_end().rsplit(' ').next().unwrap().trim_end_matches(')');
 	assert!(sha.len() >= 7 && sha.bytes().all(|b| b.is_ascii_hexdigit()), "{stdout}");
 }
@@ -516,7 +516,7 @@ fn cluster_and_equals_and_double_dash_parse_like_the_old_cli() {
 	let root = scratch_dir("cluster_and_equals_and_double_dash_parse_like_the_old_cli");
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
 	let report = |args: &[&str]| {
-		let output = cs().arg(&root).args(args).arg("-o").arg("json-compact").output().unwrap();
+		let output = loc().arg(&root).args(args).arg("-o").arg("json-compact").output().unwrap();
 		assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 		serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap()["totals"]["file_count"].as_u64().unwrap()
 	};
@@ -525,7 +525,7 @@ fn cluster_and_equals_and_double_dash_parse_like_the_old_cli() {
 	assert_eq!(report(&["--ext=rs"]), 1);
 	assert_eq!(report(&["--ext", "=rs"]), 0);
 	// After `--`, everything is a path, even what looks like a flag.
-	let output = cs().current_dir(&root).arg("--").arg("-v").output().unwrap();
+	let output = loc().current_dir(&root).arg("--").arg("-v").output().unwrap();
 	let stderr = String::from_utf8(output.stderr).unwrap();
 	assert_eq!(output.status.code(), Some(1));
 	assert!(stderr.contains("`-v`"), "{stderr}");

@@ -145,7 +145,7 @@ mod tests {
 
 	#[test]
 	fn read_into_stops_at_the_size_and_the_end() {
-		let path = std::env::temp_dir().join(format!("codestats_read_into_test_{}", std::process::id()));
+		let path = std::env::temp_dir().join(format!("loc_read_into_test_{}", std::process::id()));
 		std::fs::write(&path, b"hello world").unwrap();
 		// The buffer's longer than the file, as it is after a bigger one, and its old contents don't show.
 		let mut buffer = vec![b'x'; BUFFER_OFFSET + 64];

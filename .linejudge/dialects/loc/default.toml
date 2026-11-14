@@ -1,4 +1,4 @@
-counter = "codestats"
+counter = "loc"
 dialect = "default"
 buckets = ["code", "comments", "blanks"]
 

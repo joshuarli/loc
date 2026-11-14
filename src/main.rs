@@ -4,5 +4,5 @@
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
-	codestats::run()
+	laputa_loc::run()
 }

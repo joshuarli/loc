@@ -46,31 +46,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
-name = "codestats"
-version = "1.1.1"
-dependencies = [
- "aho-corasick",
- "anyhow",
- "crossbeam-deque",
- "encoding_rs",
- "ignore",
- "indexmap",
- "json5",
- "lexopt",
- "memchr",
- "memmap2",
- "num-format",
- "rstest",
- "rustybench",
- "same-file",
- "serde",
- "serde_json",
- "simdutf8",
- "terminal_size",
- "toml",
-]
-
-[[package]]
 name = "core_detect"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -265,6 +240,31 @@ checksum = "0348cde6df2b507ba3c3753beba226baba8567af588d6568cdb9877f02c75b60"
 dependencies = [
  "serde",
  "ucd-trie",
+]
+
+[[package]]
+name = "laputa-loc"
+version = "1.1.1"
+dependencies = [
+ "aho-corasick",
+ "anyhow",
+ "crossbeam-deque",
+ "encoding_rs",
+ "ignore",
+ "indexmap",
+ "json5",
+ "lexopt",
+ "memchr",
+ "memmap2",
+ "num-format",
+ "rstest",
+ "rustybench",
+ "same-file",
+ "serde",
+ "serde_json",
+ "simdutf8",
+ "terminal_size",
+ "toml",
 ]
 
 [[package]]

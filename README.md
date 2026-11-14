@@ -1,12 +1,12 @@
-# codestats (cs)
+# loc
 
-[![Crates.io](https://img.shields.io/crates/v/codestats.svg)](https://crates.io/crates/codestats)
-[![License](https://img.shields.io/crates/l/codestats.svg)](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/laputa-loc.svg)](https://crates.io/crates/laputa-loc)
+[![License](https://img.shields.io/crates/l/laputa-loc.svg)](LICENSE)
 [![MSRV](https://img.shields.io/badge/MSRV-1.88+-blue)](#)
 
 The fastest and most accurate code counter around. Think that's wrong? Open an issue with [numbers](#benchmarks) or [a miscounted file](#accuracy) and I'll change this line.
 
-codestats counts the code, comment, blank, and shebang lines in a codebase by language, and reports them as text or JSON. Use it for audits, comparisons, scripts, or to see how much code is in a directory.
+loc counts the code, comment, blank, and shebang lines in a codebase by language, and reports them as text or JSON. Use it for audits, comparisons, scripts, or to see how much code is in a directory.
 
 ## Features
 
@@ -27,7 +27,7 @@ codestats counts the code, comment, blank, and shebang lines in a codebase by la
 
 ### Download a binary
 
-Pick the newest prerelease on the [releases page](https://github.com/trypsynth/codestats/releases) and download the archive for your platform. Every release ships a `SHA256SUMS` file next to the archives; verify one after downloading:
+Pick the newest prerelease on the [releases page](https://github.com/joshuarli/loc/releases) and download the archive for your platform. Every release ships a `SHA256SUMS` file next to the archives; verify one after downloading:
 
 ```bash
 sha256sum -c SHA256SUMS --ignore-missing
@@ -35,23 +35,23 @@ sha256sum -c SHA256SUMS --ignore-missing
 
 | Platform | Asset |
 | --- | --- |
-| Linux x86_64, static (musl) | `cs-x86_64-unknown-linux-musl-static.zip` |
-| Linux ARM64, static (musl) | `cs-aarch64-unknown-linux-musl-static.zip` |
-| macOS Apple Silicon | `cs-aarch64-apple-darwin.zip` |
+| Linux x86_64, static (musl) | `loc-x86_64-unknown-linux-musl-static.zip` |
+| Linux ARM64, static (musl) | `loc-aarch64-unknown-linux-musl-static.zip` |
+| macOS Apple Silicon | `loc-aarch64-apple-darwin.zip` |
 
 The static Linux binaries run on any Linux, including Alpine. Windows is no longer supported.
 
 On Linux and macOS, make the binary executable and move it to a directory on your `PATH`:
 
 ```bash
-chmod +x cs-*
-sudo mv cs-* /usr/local/bin/cs
+chmod +x loc-*
+sudo mv loc-* /usr/local/bin/loc
 ```
 
 ### Install with Cargo
 
 ```bash
-cargo install codestats
+cargo install laputa-loc
 ```
 
 This requires Rust 1.88 or later. Release binaries are built with the `dist` profile, so a binary downloaded from the releases page is the fastest option. The minimum Rust version only increases in minor releases, never in patch releases.
@@ -61,13 +61,13 @@ This requires Rust 1.88 or later. Release binaries are built with the `dist` pro
 Count the current directory:
 
 ```bash
-cs
+loc
 ```
 
 Count several paths together:
 
 ```bash
-cs src tests build.rs
+loc src tests build.rs
 ```
 
 Files are listed by the path you gave, such as `src/main.rs`. If you give the same path twice, or a path inside another one you gave, its files are counted once.
@@ -75,8 +75,8 @@ Files are listed by the path you gave, such as `src/main.rs`. If you give the sa
 Count a list of files from standard input:
 
 ```bash
-git ls-files -z | cs -
-fd -e rs | cs -
+git ls-files -z | loc -
+fd -e rs | loc -
 ```
 
 The list can have one path per line or NUL-separated paths. Directories in the list are walked. The usual filters apply, except `.gitignore`, so hidden files are skipped unless you pass `-H`. A symbolic link to a file counts as that file. A symbolic link to a directory is followed only with `--symlinks`.
@@ -84,29 +84,29 @@ The list can have one path per line or NUL-separated paths. Directories in the l
 Show per-file counts for `src/` as JSON:
 
 ```bash
-cs -v src -o json
+loc -v src -o json
 ```
 
 Compare with an earlier release:
 
 ```bash
-cs diff v1.0.0               # v1.0.0 against the working tree
-cs diff v1.0.0 --to v2.0.0   # two revisions
+loc diff v1.0.0               # v1.0.0 against the working tree
+loc diff v1.0.0 --to v2.0.0   # two revisions
 ```
 
-For each language, `cs diff` shows the files, lines, code, comments, and blanks in both versions, and the change. Both sides count the files git tracks, with the same filters, so only real changes appear.
+For each language, `loc diff` shows the files, lines, code, comments, and blanks in both versions, and the change. Both sides count the files git tracks, with the same filters, so only real changes appear.
 
 More examples:
 
 ```bash
-cs -t 10                                         # only the 10 largest languages
-cs -L rust                                       # only Rust
-cs -e 'test_*' -e '*.md'                         # exclude glob patterns
-cs --exclude-lang markdown --exclude-lang toml   # exclude languages
-cs --symlinks -H                                 # follow symbolic links, include hidden files
-cs --no-gitignore                                # include files .gitignore excludes
-cs -D                                            # counts by directory
-cs langs                                         # list supported languages
+loc -t 10                                         # only the 10 largest languages
+loc -L rust                                       # only Rust
+loc -e 'test_*' -e '*.md'                         # exclude glob patterns
+loc --exclude-lang markdown --exclude-lang toml   # exclude languages
+loc --symlinks -H                                 # follow symbolic links, include hidden files
+loc --no-gitignore                                # include files .gitignore excludes
+loc -D                                            # counts by directory
+loc langs                                         # list supported languages
 ```
 
 ## Output formats
@@ -116,7 +116,7 @@ cs langs                                         # list supported languages
 
 ### JSON
 
-Every level of a JSON report counts lines the same way. `paths` lists the paths that were counted. `files` appears with `--verbose`, and `directories` with `--by-dir`. `cs diff -o json` reports its `from` and `to` counts in the same shape.
+Every level of a JSON report counts lines the same way. `paths` lists the paths that were counted. `files` appears with `--verbose`, and `directories` with `--by-dir`. `loc diff -o json` reports its `from` and `to` counts in the same shape.
 
 A language or file that contains code in another language, such as Rust in a Markdown file, has an `embedded` list with each embedded language and its lines. Those lines are also included in the language's or file's own `lines`.
 
@@ -154,9 +154,9 @@ Starting with 1.0, JSON fields and configuration file keys only change in a new 
 
 ## Command-line options
 
-Usage: `cs [OPTIONS] [PATH]...`
+Usage: `loc [OPTIONS] [PATH]...`
 
-If you don't give a path, codestats counts the current directory. If the path is `-`, it reads the paths to count from standard input.
+If you don't give a path, loc counts the current directory. If the path is `-`, it reads the paths to count from standard input.
 
 - `-q, --quiet`: show only the totals.
 - `-v, --verbose`: also show the counts for each file.
@@ -201,15 +201,15 @@ If you don't give a path, codestats counts the current directory. If the path is
 
 ## Configuration
 
-codestats can read settings from a TOML file. Options on the command line override the file. An unknown key in the file is an error, so typos don't go unnoticed.
+loc can read settings from a TOML file. Options on the command line override the file. An unknown key in the file is an error, so typos don't go unnoticed.
 
-codestats uses the first of these files that exists:
+loc uses the first of these files that exists:
 
 1. The file you pass with `--config <path>`. It's an error if this file doesn't exist.
-2. `./.codestats.toml`
-3. `./codestats.toml`
-4. `~/.config/codestats/config.toml`
-5. `~/.codestats.toml`
+2. `./.loc.toml`
+3. `./loc.toml`
+4. `~/.config/loc/config.toml`
+5. `~/.loc.toml`
 
 To ignore all of these files, for example in a benchmark or a script that has to behave the same on every machine, pass `--no-config`.
 
@@ -248,7 +248,7 @@ indent = "tab"
 
 ## Generated files
 
-By default, codestats skips generated files. To count them, pass `--include-generated`.
+By default, loc skips generated files. To count them, pass `--include-generated`.
 
 A file counts as generated in any of these cases:
 
@@ -259,7 +259,7 @@ A file counts as generated in any of these cases:
   - Translations, which tools extract and merge: Gettext (`*.po`, `*.pot`), XLIFF (`*.xliff`, `*.xlf`), .NET resources (`*.resx`), and Group Policy language files (`*.adml`).
   - Files that IDEs and interface designers save: Visual Studio solutions (`*.sln`) and filters (`*.vcxproj.filters`), per-user project settings (`*.csproj.user`), Visual C++ 2008 projects (`*.vcproj`), ReSharper settings (`*.DotSettings`), IntelliJ modules (`*.iml`), Eclipse projects (`.project`, `.classpath`, `.cproject`), Interface Builder files (`*.xib`, `*.storyboard`), and Qt Designer and Glade files (`*.ui`, `*.glade`).
 - **It's a project file Visual Studio wrote.** A `.vcxproj` file, or a `.csproj`, `.vbproj`, or `.fsproj` file from before SDK-style projects, has the `http://schemas.microsoft.com/developer/msbuild/2003` namespace. An SDK-style project, such as `<Project Sdk="Microsoft.NET.Sdk">`, is written by hand and counts as MSBuild.
-- **Its header says so.** codestats reads the comments at the start of each file, up to the first line of code, and looks for a note that a tool wrote the file. For example:
+- **Its header says so.** loc reads the comments at the start of each file, up to the first line of code, and looks for a note that a tool wrote the file. For example:
   - `// Code generated by stringer; DO NOT EDIT.` (Go)
   - `// Generated by the protocol buffer compiler.  DO NOT EDIT!` (protobuf)
   - `// <auto-generated />` (C#)
@@ -271,7 +271,7 @@ A comment that only mentions generated code, such as `// Retrieves the auto-gene
 
 ## Linguist attributes
 
-GitHub uses the linguist attributes in `.gitattributes` files for its language statistics, and codestats uses them the same way:
+GitHub uses the linguist attributes in `.gitattributes` files for its language statistics, and loc uses them the same way:
 
 | Attribute | Effect |
 | --- | --- |
@@ -281,7 +281,7 @@ GitHub uses the linguist attributes in `.gitattributes` files for its language s
 | `linguist-documentation` | The file is skipped. |
 | `linguist-language=Name` | The file is counted as `Name`, with the exceptions below. |
 
-codestats ignores `linguist-language` when:
+loc ignores `linguist-language` when:
 
 - It doesn't recognize `Name`.
 - The file's name already identifies exactly one language. For example, `*.bgt` files stay BGT and `*.nvgt` files stay NVGT, even though many projects map them to AngelScript because GitHub doesn't recognize BGT or NVGT.
@@ -296,9 +296,9 @@ lib/libc/**          linguist-vendored
 *.fixed              linguist-language=Rust
 ```
 
-codestats reads the `.gitattributes` files in the directories it counts, and in the directories above them up to the repository root. A file in a deeper directory overrides one higher up, and within a file, later lines override earlier ones. Macros, such as `[attr]generated linguist-generated`, are expanded.
+loc reads the `.gitattributes` files in the directories it counts, and in the directories above them up to the repository root. A file in a deeper directory overrides one higher up, and within a file, later lines override earlier ones. Macros, such as `[attr]generated linguist-generated`, are expanded.
 
-With `--git` and `cs diff`, the working tree's `.gitattributes` files apply to every revision, so both sides of a comparison follow the same rules.
+With `--git` and `loc diff`, the working tree's `.gitattributes` files apply to every revision, so both sides of a comparison follow the same rules.
 
 To ignore linguist attributes, pass `--no-gitattributes`.
 
@@ -306,32 +306,32 @@ To ignore linguist attributes, pass `--no-gitattributes`.
 
 ### Memory-mapped files
 
-codestats memory-maps files of 64 KB or larger, which makes reading them faster. Don't modify files while codestats is counting them.
+loc memory-maps files of 64 KB or larger, which makes reading them faster. Don't modify files while loc is counting them.
 
 ### Threads
 
-codestats counts files on several threads, each keeping its own totals, and combines them at the end. You can run several codestats processes on different directories at once, but don't run more than one on the same directory.
+loc counts files on several threads, each keeping its own totals, and combines them at the end. You can run several loc processes on different directories at once, but don't run more than one on the same directory.
 
 ## Accuracy
 
-Every change is checked in CI against [LineJudge](https://github.com/loc-conformance/linejudge), a collection of tricky files: comment markers in strings, raw strings, heredocs, languages embedded in other languages, and more. LineJudge checks codestats against the counting rules declared in [`.linejudge`](.linejudge).
+Every change is checked in CI against [LineJudge](https://github.com/loc-conformance/linejudge), a collection of tricky files: comment markers in strings, raw strings, heredocs, languages embedded in other languages, and more. LineJudge checks loc against the counting rules declared in [`.linejudge`](.linejudge).
 
 Each tool is judged against its own declared rules, so a failure means that the tool breaks its own rules. Results with LineJudge 0.3.0:
 
 | Tool | Cases that agree, out of 95 |
 | --- | ---: |
-| codestats | **95** |
+| loc | **95** |
 | mezura 3.4.0 | 89 |
 | scc 4.1.0 | 71 |
 | tokei 15.0.0 | 45 |
 
-codestats' answers are recorded in [`.linejudge/recorded/codestats.toml`](.linejudge/recorded/codestats.toml), and CI fails if any of them changes.
+loc's answers are recorded in [`.linejudge/recorded/loc.toml`](.linejudge/recorded/loc.toml), and CI fails if any of them changes.
 
 To run LineJudge locally:
 
 1. Install LineJudge.
 2. Run `cargo build --release`.
-3. Run `linejudge check --counter codestats`.
+3. Run `linejudge check --counter loc`.
 
 ## Benchmarks
 
@@ -343,7 +343,7 @@ In these tables, every tool counts the same files. [linebench](https://github.co
 
 Median time:
 
-| Repository | Files | Lines | codestats | mezura | scc | tokei |
+| Repository | Files | Lines | loc | mezura | scc | tokei |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | [cpython](https://github.com/python/cpython) | 3,554 | 2.2M | **15 ms** | 21 ms | 51 ms | 106 ms |
 | [jdk](https://github.com/openjdk/jdk) | 61,420 | 13M | **109 ms** | 125 ms | 305 ms | 767 ms |
@@ -351,7 +351,7 @@ Median time:
 
 Median peak memory:
 
-| Repository | codestats | mezura | scc | tokei |
+| Repository | loc | mezura | scc | tokei |
 | --- | ---: | ---: | ---: | ---: |
 | [cpython](https://github.com/python/cpython) | **13 MB** | 16 MB | 47 MB | 18 MB |
 | [jdk](https://github.com/openjdk/jdk) | **19 MB** | 26 MB | 94 MB | 56 MB |
@@ -360,18 +360,18 @@ Median peak memory:
 To reproduce these tables, run the following command with linebench 0.4.1, after running `linebench fetch --counters all --corpus all`:
 
 ```sh
-linebench run cpython,linux,jdk --counters scc,tokei,mezura,codestats@dev --given codestats@dev=path/to/cs --definition codestats@dev=.linebench/codestats.toml --add .linebench
+linebench run cpython,linux,jdk --counters scc,tokei,mezura,loc@dev --given loc@dev=path/to/loc --definition loc@dev=.linebench/loc.toml --add .linebench
 ```
 
-Each tool ran 30 times, half of them in reverse order. These tables measure codestats, mezura 3.5.0, scc 4.1.0, and tokei 15.0.0, the versions linebench 0.4.1 fetches.
+Each tool ran 30 times, half of them in reverse order. These tables measure loc, mezura 3.5.0, scc 4.1.0, and tokei 15.0.0, the versions linebench 0.4.1 fetches.
 
 ### Default settings
 
-In these tables, every tool runs with no flags, which is how most people use it. The tools don't count the same files, so compare these times with care. For example, mezura counts 40,234 files in rust, where codestats counts 44,338. The file and line counts in the table are from codestats.
+In these tables, every tool runs with no flags, which is how most people use it. The tools don't count the same files, so compare these times with care. For example, mezura counts 40,234 files in rust, where loc counts 44,338. The file and line counts in the table are from loc.
 
 Median time:
 
-| Repository | Files | Lines | codestats | mezura | tokei | scc | gocloc |
+| Repository | Files | Lines | loc | mezura | tokei | scc | gocloc |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | 156 | 65K | **3.7 ms** | 6.9 ms | 10 ms | 13 ms | 41 ms |
 | [cli](https://github.com/cli/cli) | 1,102 | 312K | **7.1 ms** | 9.1 ms | 23 ms | 20 ms | 113 ms |
@@ -384,7 +384,7 @@ Median time:
 
 Median peak memory:
 
-| Repository | codestats | mezura | tokei | scc | gocloc |
+| Repository | loc | mezura | tokei | scc | gocloc |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | **7.0 MB** | 7.8 MB | 7.6 MB | 27 MB | 29 MB |
 | [cli](https://github.com/cli/cli) | 7.9 MB | 8.7 MB | **7.9 MB** | 32 MB | 36 MB |
@@ -397,8 +397,8 @@ Median peak memory:
 
 Each tool ran 20 times, or 10 times for rust and linux, in rounds of two runs per tool. The tools' order flips each round, with a pause between rounds, so a processor that slows down as it heats up doesn't favor one tool.
 
-To reproduce these tables, run `CS=path/to/cs scripts/bench.sh`, which pins each repository's commit. It uses hyperfine 2.0.0 and these tools: mezura 3.5.0, tokei 15.0.0, scc 4.1.0, and gocloc 0.7.0.
+To reproduce these tables, run `LOC=path/to/loc scripts/bench.sh`, which pins each repository's commit. It uses hyperfine 2.0.0 and these tools: mezura 3.5.0, tokei 15.0.0, scc 4.1.0, and gocloc 0.7.0.
 
 ## License
 
-codestats is licensed under the [MIT License](LICENSE).
+loc is licensed under the [MIT License](LICENSE).

@@ -1,4 +1,4 @@
-//! Counting the files git tracks, in the working tree (`--git`) or in a revision (`cs diff`).
+//! Counting the files git tracks, in the working tree (`--git`) or in a revision (`loc diff`).
 
 use std::{
 	borrow::Cow,
@@ -108,7 +108,7 @@ pub fn count_snapshot(
 		Snapshot::Revision(revision) => git(&dir, &["ls-tree", "-r", "-z", revision, "--", &pathspec])?,
 	};
 	let filter = PathFilter::new(&dir, config, root.is_file())?;
-	// The working tree's attributes apply to every snapshot, so `cs diff` judges both sides alike. Paths are given joined to `dir`.
+	// The working tree's attributes apply to every snapshot, so `loc diff` judges both sides alike. Paths are given joined to `dir`.
 	let attributes = config.respect_gitattributes.then(|| Attributes::on_disk(&dir));
 	let languages = FileFilter {
 		include: &config.include_languages,

@@ -45,7 +45,7 @@ fn fixtures_match_expected_counts() {
 	let fixtures_root = manifest_dir.join("tests/fixtures");
 	let fixtures = collect_fixtures(&fixtures_root);
 	assert!(!fixtures.is_empty(), "Add at least one fixture under {}", fixtures_root.display());
-	let binary = env!("CARGO_BIN_EXE_cs");
+	let binary = env!("CARGO_BIN_EXE_loc");
 	let output = Command::new(binary)
 		.args([
 			fixtures_root.to_str().expect("Non-UTF-8 fixtures root"),
@@ -56,10 +56,10 @@ fn fixtures_match_expected_counts() {
 			"--include-generated",
 		])
 		.output()
-		.unwrap_or_else(|err| panic!("Failed to run codestats for {}: {err}", fixtures_root.display()));
+		.unwrap_or_else(|err| panic!("Failed to run loc for {}: {err}", fixtures_root.display()));
 	assert!(
 		output.status.success(),
-		"codestats run failed for {}\nstatus: {:?}\nstderr: {}",
+		"loc run failed for {}\nstatus: {:?}\nstderr: {}",
 		fixtures_root.display(),
 		output.status.code(),
 		String::from_utf8_lossy(&output.stderr),

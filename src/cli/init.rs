@@ -15,7 +15,7 @@ use crate::init;
 pub const OUTPUT_ID: &str = "output";
 pub const FORCE_ID: &str = "force";
 
-const OUTPUT: OptionSpec = OptionSpec::value(OUTPUT_ID, Some('o'), "output", "OUTPUT", None, Some(".codestats.toml"), false, "Output path for the configuration file");
+const OUTPUT: OptionSpec = OptionSpec::value(OUTPUT_ID, Some('o'), "output", "OUTPUT", None, Some(".loc.toml"), false, "Output path for the configuration file");
 const FORCE: OptionSpec = OptionSpec::flag(FORCE_ID, Some('f'), "force", "Overwrite the file if it already exists");
 
 pub static INIT_SPEC: CommandSpec = CommandSpec {

@@ -1,5 +1,5 @@
-PACKAGE    := codestats
-NAME       := cs
+PACKAGE    := laputa-loc
+NAME       := loc
 TEST_TARGETS := --lib --tests
 HOST       := $(shell rustc -vV | awk '/^host:/ {print $$2}')
 TARGET     ?= $(subst -unknown-linux-gnu,-unknown-linux-musl,$(HOST))

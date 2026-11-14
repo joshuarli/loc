@@ -28,7 +28,7 @@ use crate::{
 
 type Result<T> = result::Result<T, Box<dyn Error>>;
 
-const BUILD_SHA_VAR: &str = "CODESTATS_BUILD_SHA";
+const BUILD_SHA_VAR: &str = "LOC_BUILD_SHA";
 
 fn main() -> Result<()> {
 	emit_git_sha();
@@ -57,7 +57,7 @@ fn emit_git_sha() {
 			.unwrap_or_else(|| panic!("couldn't determine the git commit to embed in --version; build in a git checkout, or set {BUILD_SHA_VAR} to a commit id (required for release archives)"))
 	});
 	let sha = validate_sha(&sha);
-	println!("cargo:rustc-env=CODESTATS_GIT_SHA={sha}");
+	println!("cargo:rustc-env=LOC_GIT_SHA={sha}");
 	println!("cargo:rerun-if-env-changed={BUILD_SHA_VAR}");
 	if let Some((git_dir, common_dir, reference)) = git_dirs(checkout) {
 		println!("cargo:rerun-if-changed={}", git_dir.join("HEAD").display());

@@ -1,5 +1,5 @@
-name         = "codestats"
-repository   = "https://github.com/trypsynth/codestats"
+name         = "loc"
+repository   = "https://github.com/joshuarli/loc"
 version-flag = "--version"
 
 [acquisition]

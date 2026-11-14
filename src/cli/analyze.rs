@@ -89,7 +89,7 @@ pub const PATH_POSITIONAL: PositionalSpec = PositionalSpec {
 	help: "The paths to analyze: directories or files, counted together. `-` reads them from standard input, one per line or NUL-separated, as from `git ls-files -z`",
 };
 
-/// Arguments for `cs` itself: the paths to analyze and the analysis settings.
+/// Arguments for `loc` itself: the paths to analyze and the analysis settings.
 #[expect(clippy::struct_excessive_bools, reason = "CLI flags are inherently boolean")]
 pub struct AnalyzeArgs {
 	pub source: SourceArgs,
@@ -107,7 +107,7 @@ pub struct AnalyzeArgs {
 	pub by_dir: bool,
 }
 
-/// Which files are counted: shared by the main command and `cs diff`.
+/// Which files are counted: shared by the main command and `loc diff`.
 #[derive(Default)]
 #[expect(clippy::struct_excessive_bools, reason = "CLI flags are inherently boolean")]
 pub struct SourceArgs {
@@ -124,7 +124,7 @@ pub struct SourceArgs {
 	pub fail_on_error: bool,
 }
 
-/// How results are shown: shared by the main command and `cs diff`.
+/// How results are shown: shared by the main command and `loc diff`.
 pub struct FormatArgs {
 	pub number_style: NumberStyle,
 	pub size_style: SizeStyle,
@@ -295,8 +295,8 @@ pub fn parse_root(full_name: &str, version_allowed: bool, argv: Vec<OsString>) -
 }
 
 pub fn parse_prefix(prefix: &[OsString]) -> Result<Flow<AnalyzeArgs>, CliError> {
-	let argv = std::iter::once(OsString::from("cs")).chain(prefix.iter().cloned());
-	parse_root("cs", true, argv.collect())
+	let argv = std::iter::once(OsString::from("loc")).chain(prefix.iter().cloned());
+	parse_root("loc", true, argv.collect())
 }
 
 pub fn execute(args: &AnalyzeArgs, seen: &HashSet<&'static str>) -> Result<()> {

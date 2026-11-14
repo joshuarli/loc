@@ -1,4 +1,4 @@
-//! Counting a list of paths, as `cs -` reads them from standard input: a file is counted as it's named (a link to one as the file it links to), and a directory is walked.
+//! Counting a list of paths, as `loc -` reads them from standard input: a file is counted as it's named (a link to one as the file it links to), and a directory is walked.
 
 use std::{
 	collections::{HashMap, HashSet},

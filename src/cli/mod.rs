@@ -18,7 +18,7 @@ use std::{
 use command::{CommandSpec, Flow, SubcommandSpec};
 use error::{CliError, is_broken_pipe, report_usage};
 
-pub const BIN: &str = "cs";
+pub const BIN: &str = "loc";
 
 /// The specification of the main command, shared with the help renderer and the completion generators.
 pub static ROOT_SPEC: CommandSpec = CommandSpec {
@@ -67,7 +67,7 @@ pub static ROOT_SPEC: CommandSpec = CommandSpec {
 		(analyze::ids::NO_CONFIG, analyze::ids::CONFIG),
 		(analyze::ids::INCLUDE_LANG, analyze::ids::EXCLUDE_LANG),
 	],
-	note: Some("`cs diff` takes the source and format options above as well; see `cs diff --help`."),
+	note: Some("`loc diff` takes the source and format options above as well; see `loc diff --help`."),
 };
 
 /// Parse `args` (including the program name, as from `std::env::args_os()`) and run the selected command.
@@ -112,7 +112,7 @@ fn print_page(text: &str) -> ExitCode {
 		Ok(()) => ExitCode::SUCCESS,
 		Err(error) if error.kind() == io::ErrorKind::BrokenPipe => ExitCode::SUCCESS,
 		Err(error) => {
-			eprintln!("cs: couldn't write to stdout: {error}");
+			eprintln!("loc: couldn't write to stdout: {error}");
 			ExitCode::FAILURE
 		}
 	}

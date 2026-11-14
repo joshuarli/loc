@@ -7,8 +7,8 @@ trade only when it buys a substantial measured speedup.
 Source review: 2026-11-13, America/Los_Angeles. Repository checkpoint:
 `ca69ed1ff5317baf9010e7799998f4a909021ab8`. This is a proposed implementation
 campaign; no speedup or test result is claimed here. Reconcile with newer commits
-before starting. Follow [AGENTS.md](AGENTS.md); the package is still `codestats`
-and the executable is `cs`. Renaming either is outside this campaign.
+before starting. Follow [AGENTS.md](AGENTS.md); since this campaign was planned the package became
+`laputa-loc` and the executable became `loc`.
 
 ## Scope and execution order
 
@@ -49,7 +49,7 @@ remove their production code rather than accumulating alternate engines.
     `count_r_dense_in_memory` (pathological 'r'-dense line ending in a marker) 1.4 µs — no quadratic re-scan. `git stash`-based
     interleaved pairs both confirm. `cargo test` 513/513 incl. the extended `token_starts_find_what_the_automaton_finds`
     (now covers all languages that use `starts`, ~73 incl. the 17) and `sweeping_matches_classifying_every_line`;
-    `linejudge check --counter codestats`: 107 agree, 0 fail; clippy clean; `cargo bench` harness extended with the
+    `linejudge check --counter loc`: 107 agree, 0 fail; clippy clean; `cargo bench` harness extended with the
     `count_r_dense_in_memory` guard.
   - Historical ~19 ms `count_generated_corpus` on this host dropped to ~6.8 ms between sessions with OrbStack quieted; the two
     are different host states, not a code effect (the interleaved A/B above isolates the change: neutral there).
@@ -153,7 +153,7 @@ remove their production code rather than accumulating alternate engines.
     integration suites pass. Narrow plan-named tests confirmed to execute and pass: `sweeping_matches_classifying_every_line`
     (0.19 s) and `sweeps_match_lines_across_block_edges` (0.01 s). `cargo clippy --all-targets` clean apart from the
     pre-existing `package.readme` manifest warning.
-  - LineJudge 0.4.0 (`linejudge check --counter codestats`, release binary): 107 agree, 0 fail, 0 unclaimed; 3 fixtures
+  - LineJudge 0.4.0 (`linejudge check --counter loc`, release binary): 107 agree, 0 fail, 0 unclaimed; 3 fixtures
     disabled by the fixture set. Recorded results file untouched.
   - Release qualification: `make release` + `make verify-release` + `make test-ci` all pass. aarch64-apple-darwin built
     natively on this host (Mach-O, ELF checks skipped as designed). aarch64-unknown-linux-musl and x86_64-unknown-linux-musl
@@ -213,7 +213,7 @@ allocator choices as measured variables, not excuses to restore dependencies.
 ### Exact optimizations
 
 Keep the existing default counting semantics. The local
-[LineJudge dialect](.linejudge/dialects/codestats/default.toml) says whitespace-only
+[LineJudge dialect](.linejudge/dialects/loc/default.toml) says whitespace-only
 lines are blank even inside strings/comments, ordinary strings are code, and
 eligible documentation strings count as comments. Preserve the actual
 whitespace, shebang, line-ending and embedded-language conventions too.
@@ -664,5 +664,5 @@ before editing. External implementation references are pinned for reproducibilit
 
 - [Mezura v3.5.0 mask implementation](https://github.com/subamanis/mezura/blob/v3.5.0/mezura-core/src/engine/masks.rs): ISA dispatch, block masks, byte classes and carry-based line accounting.
 - [Mezura v3.5.0 parser](https://github.com/subamanis/mezura/blob/v3.5.0/mezura-core/src/engine/file_parser.rs): stateful interpretation of candidate positions. Borrow small mechanisms, not the surrounding product architecture or counting semantics.
-- [Local conformance dialect](.linejudge/dialects/codestats/default.toml) and [recorded results](.linejudge/recorded/codestats.toml): the existing regression contract, not a reason to preserve independently demonstrated bugs.
+- [Local conformance dialect](.linejudge/dialects/loc/default.toml) and [recorded results](.linejudge/recorded/loc.toml): the existing regression contract, not a reason to preserve independently demonstrated bugs.
 - [Local benchmark driver](scripts/bench.sh), [instruction-cost diagnostic](scripts/costs.py), and [Rustybench harness](benches/bench.rs): extend the existing development loop.

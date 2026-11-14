@@ -65,7 +65,7 @@ impl HumanFormatter {
 		let total_size_human = &summary.total_size_human;
 		writeln!(
 			writer,
-			"Codestats for {}: {} {}, {} total {}, {} total size.",
+			"Loc for {}: {} {}, {} total {}, {} total size.",
 			report.title(),
 			ctx.number(summary.total_files),
 			pluralize(summary.total_files, "file", "files"),

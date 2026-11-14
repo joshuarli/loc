@@ -1,4 +1,4 @@
-//! Benchmark harness for codestats.
+//! Benchmark harness for loc.
 //!
 //! Tracks wall time and allocations on the paths that matter for a counter of
 //! real trees: walking and classifying a corpus, and rendering the reports.
@@ -17,7 +17,7 @@ use rustybench::{AllocProfiler, Bencher, black_box};
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
 
-use codestats::{
+use laputa_loc::{
 	analysis::CodeAnalyzer,
 	config::Config,
 	display::{OutputFormat, ViewOptions, write_output},
@@ -30,7 +30,7 @@ impl BenchDir {
 		let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
 		let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(".work").join("bench");
 		fs::create_dir_all(&root).unwrap();
-		let path = root.join(format!("codestats-bench-{label}-{}-{stamp}", std::process::id()));
+		let path = root.join(format!("loc-bench-{label}-{}-{stamp}", std::process::id()));
 		fs::create_dir_all(&path).unwrap();
 		Self(path)
 	}
@@ -83,7 +83,7 @@ fn fixtures() -> PathBuf {
 	Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
-fn count(root: &Path) -> codestats::analysis::AnalysisResults {
+fn count(root: &Path) -> laputa_loc::analysis::AnalysisResults {
 	let config = Config::default();
 	CodeAnalyzer::new(root, (&config).into()).analyze().unwrap()
 }
@@ -104,24 +104,24 @@ fn count_fixtures(bencher: Bencher) {
 fn count_rust_in_memory(bencher: Bencher) {
 	let bytes = large_rust();
 	// Warm the lazy per-language matchers before the measured loop, so first-use is not charged to steady-state scanning.
-	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes)));
 }
 
 #[rustybench::bench]
 fn detect_and_count_rust_in_memory(bencher: Bencher) {
 	let bytes = large_rust();
 	let name = Path::new("bench.rs");
-	black_box(codestats::analysis::bench::detect_and_count(name, &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::detect_and_count(name, &bytes)));
+	black_box(laputa_loc::analysis::bench::detect_and_count(name, &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::detect_and_count(name, &bytes)));
 }
 
 #[rustybench::bench]
 fn count_blank_heavy_in_memory(bencher: Bencher) {
 	// Mostly-newline input: exercises the blank-line accounting in the mask sweep.
 	let bytes = b"\n\n\n\nfn f() {}\n\n\n\nlet x = 1;\n\n\n\n".repeat(8 * 1024);
-	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes)));
 }
 
 #[rustybench::bench]
@@ -131,8 +131,8 @@ fn count_minified_in_memory(bencher: Bencher) {
 	while bytes.len() < 128 * 1024 {
 		bytes.extend_from_slice(b"var x={a:1,b:\"s\",c:[1,2,3]};function f(){return x.a+`t${x.b}u`}");
 	}
-	black_box(codestats::analysis::bench::count_as("JavaScript", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("JavaScript", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("JavaScript", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("JavaScript", &bytes)));
 }
 
 #[rustybench::bench]
@@ -140,8 +140,8 @@ fn count_non_ascii_in_memory(bencher: Bencher) {
 	// Multi-byte UTF-8 throughout, including inside comments and strings.
 	let line = "// αβγδ εζηθ -> 'λ' + \"μνξο\" = π\nlet σύμβολο = \"αβγδ\";\n\n";
 	let bytes = line.repeat(8 * 1024).into_bytes();
-	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes)));
 }
 
 #[rustybench::bench]
@@ -153,8 +153,8 @@ fn count_r_dense_in_memory(bencher: Bencher) {
 	}
 	bytes.push_str("// tail comment\n");
 	let bytes = bytes.into_bytes();
-	black_box(codestats::analysis::bench::count_as("Rust", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("Rust", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("Rust", &bytes)));
 }
 
 #[rustybench::bench]
@@ -165,8 +165,8 @@ fn count_json_in_memory(bencher: Bencher) {
 		n += 1;
 		writeln!(bytes, "{{\"key{n}\": [{n}, \"value{n}\", true, null], \"other\": {{\"nested\": \"αβ\"}}}},").unwrap();
 	}
-	black_box(codestats::analysis::bench::count_as("JSON", &bytes));
-	bencher.bench_local(|| black_box(codestats::analysis::bench::count_as("JSON", &bytes)));
+	black_box(laputa_loc::analysis::bench::count_as("JSON", &bytes));
+	bencher.bench_local(|| black_box(laputa_loc::analysis::bench::count_as("JSON", &bytes)));
 }
 
 #[rustybench::bench]

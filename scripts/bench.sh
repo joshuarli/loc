@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Benchmarks codestats against mezura, tokei, scc, and gocloc on pinned commits of public repositories and prints the README tables.
-# Needs git, hyperfine, jq, and the other tools on PATH. Usage: CS=<release binary> scripts/bench.sh [clone directory]
-# Without CS, it builds the binary with cargo, which uses thin link-time optimization and so isn't quite what users download.
+# Benchmarks loc against mezura, tokei, scc, and gocloc on pinned commits of public repositories and prints the README tables.
+# Needs git, hyperfine, jq, and the other tools on PATH. Usage: LOC=<release binary> scripts/bench.sh [clone directory]
+# Without LOC, it builds the binary with cargo, which uses thin link-time optimization and so isn't quite what users download.
 
 repos=(
 	"BurntSushi/ripgrep 91f5d22ef48bde459d90a8c7dbeab416e97d0f2b"
@@ -13,14 +13,14 @@ repos=(
 	"rust-lang/rust 92b5b8c87c61b20adc9001b41baf587634a74734"
 	"torvalds/linux d89e1d186ec9271bf78e62771779e9fc03bf0fc3"
 )
-tools=(codestats mezura tokei scc gocloc)
+tools=(loc mezura tokei scc gocloc)
 root=$(cd "$(dirname "$0")/.." && pwd)
 dir=$(realpath -m "${1:-$root/target/bench-repos}")
 mkdir -p "$dir/results"
-cs=${CS:-}
-if [[ -z $cs ]]; then
+loc=${LOC:-}
+if [[ -z $loc ]]; then
 	cargo build --release --quiet --manifest-path "$root/Cargo.toml" || exit 1
-	cs=$root/target/release/cs
+	loc=$root/target/release/loc
 fi
 # Record what was measured: each tool's path, hash and version, so a number can be traced to a build.
 {
@@ -28,13 +28,13 @@ fi
 	echo "host: $(uname -smo)"
 	for tool in "${tools[@]}"; do
 		bin=$tool
-		[[ $tool == codestats ]] && bin=$cs
+		[[ $tool == loc ]] && bin=$loc
 		path=$(command -v "$bin") || { echo "tool missing: $tool" >&2; exit 1; }
 		version=$("$bin" --version 2>&1 | head -1)
 		if command -v shasum >/dev/null; then hash=$(shasum -a 256 "$path" | cut -d' ' -f1); else hash=$(sha256sum "$path" | cut -d' ' -f1); fi
 		printf '%s\t%s\t%s\t%s\n' "$tool" "$path" "$hash" "$version"
 	done
-	echo "codestats: $root at $(git -C "$root" rev-parse HEAD) (release profile, see Cargo.toml)"
+	echo "loc: $root at $(git -C "$root" rev-parse HEAD) (release profile, see Cargo.toml)"
 } >"$dir/results/environment.txt"
 echo "Recorded tool versions and hashes in $dir/results/environment.txt" >&2
 
@@ -60,7 +60,7 @@ for entry in "${repos[@]}"; do
 	backward=()
 	for tool in "${tools[@]}"; do
 		bin=$tool
-		[[ $tool == codestats ]] && bin=$cs
+		[[ $tool == loc ]] && bin=$loc
 		forward+=(-n "$tool" "$bin $dir/$name")
 		backward=(-n "$tool" "$bin $dir/$name" "${backward[@]}")
 	done
@@ -75,7 +75,7 @@ for entry in "${repos[@]}"; do
 	done
 	jq -s --arg tools "${tools[*]}" '[.[].results[]] as $all | {results: [$tools | split(" ")[] as $tool | {measurements: [$all[] | select(.name == $tool) | .measurements[]]}]}' \
 		"$dir/results/$name".round-*.json >"$dir/results/$name.json" || exit 1
-	"$cs" "$dir/$name" -q -o json-compact | jq -c .totals >"$dir/results/$name.summary.json"
+	"$loc" "$dir/$name" -q -o json-compact | jq -c .totals >"$dir/results/$name.summary.json"
 done
 
 table() {

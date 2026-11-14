@@ -54,7 +54,7 @@ pub static DIFF_SPEC: CommandSpec = CommandSpec {
 	note: Some("These options are shared with the main command."),
 };
 
-/// Arguments for `cs diff`.
+/// Arguments for `loc diff`.
 pub struct DiffArgs {
 	pub from: String,
 	pub to: Option<String>,
@@ -121,9 +121,9 @@ fn parse(full_name: &str, argv: Vec<std::ffi::OsString>) -> Result<Flow<DiffArgs
 pub fn execute(args: &DiffArgs, seen: &HashSet<&'static str>) -> Result<()> {
 	let config = super::merge::merge_diff_config(super::merge::base_config(&args.source)?, args, seen)?;
 	let [path] = &config.paths[..] else {
-		bail!("`cs diff` compares one path at a time");
+		bail!("`loc diff` compares one path at a time");
 	};
-	ensure!(path.as_os_str() != "-", "`cs diff` can't read its paths from standard input");
+	ensure!(path.as_os_str() != "-", "`loc diff` can't read its paths from standard input");
 	super::merge::ensure_path(&config)?;
 	let from = count_snapshot(path, &Snapshot::Revision(&args.from), &config.analysis, false)
 		.with_context(|| format!("couldn't read revision `{}`", args.from))?;

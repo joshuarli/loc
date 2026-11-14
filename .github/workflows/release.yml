@@ -80,9 +80,9 @@ jobs:
           file: Dockerfile
           platforms: ${{ matrix.docker_platform }}
           load: true
-          tags: codestats-builder:${{ matrix.target }}
-          cache-from: type=gha,scope=codestats-${{ matrix.target }}
-          cache-to: type=gha,mode=max,scope=codestats-${{ matrix.target }}
+          tags: loc-builder:${{ matrix.target }}
+          cache-from: type=gha,scope=loc-${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=loc-${{ matrix.target }}
       - name: Install Rust toolchain
         if: matrix.docker_platform == ''
         run: rustup show active-toolchain
@@ -101,26 +101,26 @@ jobs:
         run: make test-ci
       - name: Save macOS release
         if: matrix.docker_platform == ''
-        run: cp "target/${{ matrix.target }}/dist/cs" "cs-${{ matrix.target }}"
+        run: cp "target/${{ matrix.target }}/dist/loc" "loc-${{ matrix.target }}"
       - name: Build and verify Linux releases
         if: matrix.docker_platform != ''
         run: |
           docker run --rm --init \
             --platform "${{ matrix.docker_platform }}" \
             -e CI \
-            -v "$GITHUB_WORKSPACE:/codestats" \
-            -w /codestats \
-            codestats-builder:${{ matrix.target }} \
+            -v "$GITHUB_WORKSPACE:/loc" \
+            -w /loc \
+            loc-builder:${{ matrix.target }} \
             sh -ec '
               make release TARGET=${{ matrix.target }}
               make verify-release TARGET=${{ matrix.target }}
               make test-ci
-              cp target/${{ matrix.target }}/dist/cs cs-${{ matrix.target }}-static
+              cp target/${{ matrix.target }}/dist/loc loc-${{ matrix.target }}-static
             '
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: "cs-${{ matrix.target }}${{ matrix.docker_platform != '' && '-static' || '' }}"
-          path: cs-*
+          name: "loc-${{ matrix.target }}${{ matrix.docker_platform != '' && '-static' || '' }}"
+          path: loc-*
 
   release:
     name: Create pre-release
@@ -156,7 +156,7 @@ jobs:
           fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: cs-*
+          pattern: loc-*
           path: dist
 
       - name: Verify Linux ELF artifacts are fully static
@@ -195,20 +195,20 @@ jobs:
 
       - name: Validate and package release artifacts
         run: |
-          expected_artifacts=$'cs-aarch64-apple-darwin\ncs-aarch64-unknown-linux-musl-static\ncs-x86_64-unknown-linux-musl-static'
+          expected_artifacts=$'loc-aarch64-apple-darwin\nloc-aarch64-unknown-linux-musl-static\nloc-x86_64-unknown-linux-musl-static'
           actual_artifacts=$(find dist -mindepth 1 -maxdepth 1 -print | sed 's|.*/||' | LC_ALL=C sort)
           if [[ "$actual_artifacts" != "$expected_artifacts" ]]; then
             echo "Unexpected release artifact directories:" >&2
             printf '%s\n' "$actual_artifacts" >&2
             exit 1
           fi
-          expected_mac='cs-aarch64-apple-darwin'
-          expected_arm='cs-aarch64-unknown-linux-musl-static'
-          expected_x86='cs-x86_64-unknown-linux-musl-static'
+          expected_mac='loc-aarch64-apple-darwin'
+          expected_arm='loc-aarch64-unknown-linux-musl-static'
+          expected_x86='loc-x86_64-unknown-linux-musl-static'
           for spec in \
-            "$expected_mac:cs-aarch64-apple-darwin" \
-            "$expected_arm:cs-aarch64-unknown-linux-musl-static" \
-            "$expected_x86:cs-x86_64-unknown-linux-musl-static"; do
+            "$expected_mac:loc-aarch64-apple-darwin" \
+            "$expected_arm:loc-aarch64-unknown-linux-musl-static" \
+            "$expected_x86:loc-x86_64-unknown-linux-musl-static"; do
             expected=${spec%%:*}
             artifact=${spec#*:}
             actual=$(find "dist/$artifact" -type f -print | sed 's|.*/||' | LC_ALL=C sort)
@@ -220,9 +220,9 @@ jobs:
           done
           mkdir dist/zips
           for file in \
-            dist/cs-aarch64-apple-darwin/cs-aarch64-apple-darwin \
-            dist/cs-aarch64-unknown-linux-musl-static/cs-aarch64-unknown-linux-musl-static \
-            dist/cs-x86_64-unknown-linux-musl-static/cs-x86_64-unknown-linux-musl-static; do
+            dist/loc-aarch64-apple-darwin/loc-aarch64-apple-darwin \
+            dist/loc-aarch64-unknown-linux-musl-static/loc-aarch64-unknown-linux-musl-static \
+            dist/loc-x86_64-unknown-linux-musl-static/loc-x86_64-unknown-linux-musl-static; do
             zip -9 --junk-paths "dist/zips/$(basename "$file").zip" "$file"
           done
           cd dist/zips

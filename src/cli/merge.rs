@@ -49,7 +49,7 @@ pub fn merge_config(mut config: Config, args: &AnalyzeArgs, seen: &HashSet<&'sta
 	merge_shared(config, &args.source, &args.format, seen)
 }
 
-/// Merge `cs diff`'s arguments into `config`, as [`merge_config`] does for the main command.
+/// Merge `loc diff`'s arguments into `config`, as [`merge_config`] does for the main command.
 ///
 /// # Errors
 ///
@@ -109,7 +109,7 @@ fn merge_shared(mut config: Config, source: &SourceArgs, format: &FormatArgs, se
 	);
 	for name in config.analysis.include_languages.iter().chain(&config.analysis.exclude_languages) {
 		if language_named(name).is_none() {
-			eprintln!("Warning: no language is named `{name}`. Run `cs langs` to list them.");
+			eprintln!("Warning: no language is named `{name}`. Run `loc langs` to list them.");
 		}
 	}
 	Ok(config)
@@ -150,7 +150,7 @@ mod tests {
 
 	fn parse_cli(arguments: &[&str]) -> (AnalyzeArgs, std::collections::HashSet<&'static str>) {
 		let argv = arguments.iter().map(OsString::from).collect::<Vec<_>>();
-		match parse_root("cs", false, argv).expect("arguments parse") {
+		match parse_root("loc", false, argv).expect("arguments parse") {
 			Flow::Done(parsed, seen) => (parsed, seen),
 			_ => panic!("expected done"),
 		}
@@ -162,7 +162,7 @@ mod tests {
 		let root = Path::new(env!("CARGO_MANIFEST_DIR"))
 			.join("target")
 			.join("tmp")
-			.join(format!("codestats_config_test_{}_{unique}", std::process::id()));
+			.join(format!("loc_config_test_{}_{unique}", std::process::id()));
 		fs::create_dir_all(&root).expect("create temp dir");
 		let path = root.join("config.toml");
 		fs::write(&path, contents).expect("write temp config");
@@ -173,7 +173,7 @@ mod tests {
 	fn merge_resolves_config_relative_path() {
 		let config_path = write_config("path = \"fixtures\"\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs"]);
+		let (args, seen) = parse_cli(&["loc"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		let expected = config_path.parent().expect("config parent").join("fixtures");
 		assert_eq!(merged.paths, [expected]);
@@ -183,7 +183,7 @@ mod tests {
 	fn config_takes_a_list_of_paths_relative_to_itself() {
 		let config_path = write_config("paths = [\"src\", \"/abs\"]\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs"]);
+		let (args, seen) = parse_cli(&["loc"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		let parent = config_path.parent().expect("config parent");
 		// On Windows, a path that starts with a slash stays on the config's drive.
@@ -208,7 +208,7 @@ mod tests {
 	fn merge_preserves_cli_path_override() {
 		let config_path = write_config("path = \"fixtures\"\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs", "custom-path"]);
+		let (args, seen) = parse_cli(&["loc", "custom-path"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.paths, [PathBuf::from("custom-path")]);
 	}
@@ -217,7 +217,7 @@ mod tests {
 	fn merge_clamps_precision() {
 		let config_path = write_config("[display]\nprecision = 9\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs"]);
+		let (args, seen) = parse_cli(&["loc"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.display.precision, 6);
 	}
@@ -226,7 +226,7 @@ mod tests {
 	fn merge_extends_exclude_patterns_from_cli() {
 		let config_path = write_config("[analysis]\nexclude_patterns = [\"target\"]\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs", "--exclude", "node_modules"]);
+		let (args, seen) = parse_cli(&["loc", "--exclude", "node_modules"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.analysis.exclude_patterns, vec!["target".to_string(), "node_modules".to_string()]);
 	}
@@ -235,7 +235,7 @@ mod tests {
 	fn merge_rejects_conflicting_language_filters() {
 		let config_path = write_config("[analysis]\ninclude_languages = [\"Rust\"]\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs", "--exclude-lang", "python"]);
+		let (args, seen) = parse_cli(&["loc", "--exclude-lang", "python"]);
 		let err = merge_config(config, &args, &seen).expect_err("conflicting language filters");
 		assert_eq!(err.to_string(), "Config cannot set both include_languages and exclude_languages");
 	}
@@ -244,7 +244,7 @@ mod tests {
 	fn merge_applies_boolean_overrides() {
 		let config_path = write_config("[analysis]\nrespect_gitignore = true\ninclude_hidden = false\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs", "--no-gitignore", "--hidden"]);
+		let (args, seen) = parse_cli(&["loc", "--no-gitignore", "--hidden"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert!(!merged.analysis.respect_gitignore);
 		assert!(merged.analysis.include_hidden);
@@ -254,7 +254,7 @@ mod tests {
 	fn merge_applies_indent_from_cli() {
 		let config_path = write_config("");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs", "--indent", "4"]);
+		let (args, seen) = parse_cli(&["loc", "--indent", "4"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.display.indent, IndentStyle::Spaces(4));
 	}
@@ -263,7 +263,7 @@ mod tests {
 	fn merge_applies_indent_from_config() {
 		let config_path = write_config("[display]\nindent = \"2\"\n");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs"]);
+		let (args, seen) = parse_cli(&["loc"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.display.indent, IndentStyle::Spaces(2));
 	}
@@ -272,7 +272,7 @@ mod tests {
 	fn merge_indent_defaults_to_tab() {
 		let config_path = write_config("");
 		let config = Config::from_file(&config_path).expect("load config");
-		let (args, seen) = parse_cli(&["cs"]);
+		let (args, seen) = parse_cli(&["loc"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.display.indent, IndentStyle::Tab);
 	}
@@ -282,11 +282,11 @@ mod tests {
 		let config_path = write_config("[analysis]\nverbosity = \"regular\"\n");
 		let config = Config::from_file(&config_path).expect("load config");
 
-		let (args, seen) = parse_cli(&["cs", "--quiet"]);
+		let (args, seen) = parse_cli(&["loc", "--quiet"]);
 		let merged = merge_config(config.clone(), &args, &seen).expect("merge config");
 		assert_eq!(merged.analysis.verbosity, Verbosity::Summary);
 
-		let (args, seen) = parse_cli(&["cs", "--verbose"]);
+		let (args, seen) = parse_cli(&["loc", "--verbose"]);
 		let merged = merge_config(config, &args, &seen).expect("merge config");
 		assert_eq!(merged.analysis.verbosity, Verbosity::Verbose);
 	}

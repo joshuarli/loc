@@ -17,14 +17,14 @@ use ignore::{
 use super::walk::strip_start;
 use crate::langs::{Language, language_named};
 
-/// What a file's attributes say about it. `None` fields say nothing, leaving the file to codestats' own rules.
+/// What a file's attributes say about it. `None` fields say nothing, leaving the file to loc's own rules.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Verdict {
-	/// `linguist-generated`, or `-linguist-generated` (or `=false`) to say a file codestats would take for generated isn't.
+	/// `linguist-generated`, or `-linguist-generated` (or `=false`) to say a file loc would take for generated isn't.
 	pub generated: Option<bool>,
 	/// `linguist-vendored` or `linguist-documentation`: left out, as GitHub leaves them out of its statistics.
 	pub excluded: bool,
-	/// `linguist-language=Name`, when codestats knows a language by that name.
+	/// `linguist-language=Name`, when loc knows a language by that name.
 	pub language: Option<&'static Language>,
 }
 

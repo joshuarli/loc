@@ -1,4 +1,4 @@
-//! Output for `cs diff`: each language's counts in two versions, side by side, as text or JSON.
+//! Output for `loc diff`: each language's counts in two versions, side by side, as text or JSON.
 
 use std::{cmp::Reverse, fmt::Write as _, io::Write, path::Path};
 
@@ -11,7 +11,7 @@ use crate::{
 	langs::LANGUAGES,
 };
 
-/// Version of the `cs diff` JSON shape, raised whenever a field is renamed, removed or changes meaning.
+/// Version of the `loc diff` JSON shape, raised whenever a field is renamed, removed or changes meaning.
 const SCHEMA_VERSION: u32 = 2;
 
 /// One version's counts for a language, or for everything.
@@ -177,7 +177,7 @@ pub fn write_diff(
 
 fn write_human(diff: &Diff, ctx: &FormatterContext, writer: &mut dyn Write) -> Result<()> {
 	let (from, to) = diff.totals;
-	writeln!(writer, "Codestats diff for {} from `{}` to {}:", diff.path, diff.from_name, diff.to_description())?;
+	writeln!(writer, "Loc diff for {} from `{}` to {}:", diff.path, diff.from_name, diff.to_description())?;
 	let mut lines = format!(
 		"Files: {}. Lines: {}",
 		cell(ctx, from.file_count, to.file_count),
@@ -225,7 +225,7 @@ fn write_human(diff: &Diff, ctx: &FormatterContext, writer: &mut dyn Write) -> R
 #[derive(Serialize)]
 struct JsonDiff<'a> {
 	schema_version: u32,
-	/// The paths compared, as a list like the main report's, though `cs diff` takes one.
+	/// The paths compared, as a list like the main report's, though `loc diff` takes one.
 	paths: [&'a str; 1],
 	from: &'a str,
 	/// `None` for the working tree.

@@ -1,4 +1,4 @@
-// Language definitions, compiled into codestats by build.rs. Entries must stay in alphabetical order.
+// Language definitions, compiled into loc by build.rs. Entries must stay in alphabetical order.
 //
 // Fields:
 // file_patterns: Required. Exact filenames, matched case-sensitively, extensions, matched case-insensitively, or other globs. When patterns from several languages match a file, only the most specific ones count: exact filenames beat globs, and longer extensions beat shorter ones.

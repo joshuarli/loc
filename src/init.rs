@@ -5,11 +5,11 @@ use std::{
 
 use anyhow::{Result, bail};
 
-const DEFAULT_CONFIG_PATH: &str = ".codestats.toml";
+const DEFAULT_CONFIG_PATH: &str = ".loc.toml";
 
 const DEFAULT_CONFIG_TEMPLATE: &str = "\
-# Codestats configuration file
-# See: cs --help for details on each option
+# loc configuration file
+# See: loc --help for details on each option
 
 # Paths to count together, relative to this file (default: the current directory)
 # paths = [\"src\", \"tests\"]
@@ -112,14 +112,14 @@ mod tests {
 
 	fn unique_temp_dir(label: &str) -> PathBuf {
 		let unique = SystemTime::now().duration_since(UNIX_EPOCH).expect("system time is set").as_nanos();
-		let dir = std::env::temp_dir().join(format!("codestats_init_test_{}_{}_{label}", std::process::id(), unique));
+		let dir = std::env::temp_dir().join(format!("loc_init_test_{}_{}_{label}", std::process::id(), unique));
 		fs::create_dir_all(&dir).expect("create temp dir");
 		dir
 	}
 
 	#[test]
 	fn default_config_path_constant() {
-		assert_eq!(DEFAULT_CONFIG_PATH, ".codestats.toml");
+		assert_eq!(DEFAULT_CONFIG_PATH, ".loc.toml");
 	}
 
 	#[test]
@@ -166,7 +166,7 @@ mod tests {
 		run_init(Some(file.clone()), false).expect("run_init should succeed");
 
 		let content = fs::read_to_string(&file).expect("read written file");
-		assert!(content.contains("# Codestats configuration file"), "should contain header comment");
+		assert!(content.contains("# loc configuration file"), "should contain header comment");
 		assert!(content.contains("[analysis]"), "should contain [analysis] section");
 		assert!(content.contains("[display]"), "should contain [display] section");
 		assert!(content.contains("# verbosity = "), "should contain verbosity option");

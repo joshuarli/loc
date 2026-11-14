@@ -260,7 +260,7 @@ mod tests {
 
 	fn parse(argv: &[&str]) -> Result<Flow<Args>, CliError> {
 		let argv = argv.iter().map(OsString::from).collect::<Vec<_>>();
-		parse_command(&SPEC, "cs", Args::default(), Parser::from_iter(argv), false, test_apply, positional)
+		parse_command(&SPEC, "loc", Args::default(), Parser::from_iter(argv), false, test_apply, positional)
 	}
 
 	fn done(result: Result<Flow<Args>, CliError>) -> (Args, HashSet<&'static str>) {
@@ -274,74 +274,74 @@ mod tests {
 
 	#[test]
 	fn flags_and_clusters_and_equals_are_parsed() {
-		let (args, seen) = done(parse(&["cs", "-a"]));
+		let (args, seen) = done(parse(&["loc", "-a"]));
 		assert!(args.alpha);
 		assert!(seen.contains("alpha"));
-		let (args, _) = done(parse(&["cs", "-ar", "4"]));
+		let (args, _) = done(parse(&["loc", "-ar", "4"]));
 		assert!(args.alpha && args.repeatable == ["4"]);
-		let (args, _) = done(parse(&["cs", "-b=5"]));
+		let (args, _) = done(parse(&["loc", "-b=5"]));
 		assert_eq!(args.beta.as_deref(), Some("5"));
-		let (args, _) = done(parse(&["cs", "--beta", "6"]));
+		let (args, _) = done(parse(&["loc", "--beta", "6"]));
 		assert_eq!(args.beta.as_deref(), Some("6"));
-		let (args, _) = done(parse(&["cs", "--beta=7"]));
+		let (args, _) = done(parse(&["loc", "--beta=7"]));
 		assert_eq!(args.beta.as_deref(), Some("7"));
 	}
 
 	#[test]
 	fn unknown_option_is_an_error() {
-		let error = parse(&["cs", "--nope"]).err().expect("unknown option");
+		let error = parse(&["loc", "--nope"]).err().expect("unknown option");
 		assert_eq!(error.to_string(), "unexpected argument '--nope' found");
 	}
 
 	#[test]
 	fn missing_value_is_an_error() {
-		let error = parse(&["cs", "--beta"]).err().expect("missing value");
+		let error = parse(&["loc", "--beta"]).err().expect("missing value");
 		assert!(error.to_string().contains("missing argument for option"), "{error}");
 	}
 
 	#[test]
 	fn invalid_possible_value_lists_values_and_suggests() {
-		let error = parse(&["cs", "--gamma", "onne"]).err().expect("invalid value");
+		let error = parse(&["loc", "--gamma", "onne"]).err().expect("invalid value");
 		assert!(error.to_string().contains("'--gamma <GAMMA>'"), "{error}");
 		assert!(error.to_string().contains("possible values: one, two"), "{error}");
 		assert!(error.to_string().contains("did you mean 'one'?"), "{error}");
-		let (args, _) = done(parse(&["cs", "--gamma", "one"]));
+		let (args, _) = done(parse(&["loc", "--gamma", "one"]));
 		assert_eq!(args.gamma.as_deref(), Some("one"));
 	}
 
 	#[test]
 	fn non_repeatable_value_may_not_be_repeated() {
-		let error = parse(&["cs", "--beta", "1", "--beta", "2"]).err().expect("repeated value");
+		let error = parse(&["loc", "--beta", "1", "--beta", "2"]).err().expect("repeated value");
 		assert!(error.to_string().contains("more than once"), "{error}");
-		let (args, _) = done(parse(&["cs", "--repeatable", "1", "--repeatable", "2"]));
+		let (args, _) = done(parse(&["loc", "--repeatable", "1", "--repeatable", "2"]));
 		assert_eq!(args.repeatable, ["1", "2"]);
 	}
 
 	#[test]
 	fn conflicting_options_are_an_error() {
-		let error = parse(&["cs", "-a", "-b", "1"]).err().expect("conflict");
+		let error = parse(&["loc", "-a", "-b", "1"]).err().expect("conflict");
 		assert_eq!(error.to_string(), "the argument '--alpha' cannot be used with '--beta <BETA>'");
 	}
 
 	#[test]
 	fn everything_after_double_dash_is_positional() {
-		let (args, _) = done(parse(&["cs", "--", "-a"]));
+		let (args, _) = done(parse(&["loc", "--", "-a"]));
 		assert_eq!(args.positional, [OsString::from("-a")]);
 		assert!(!args.alpha);
 	}
 
 	#[test]
 	fn help_is_an_early_exit() {
-		assert!(matches!(parse(&["cs", "--help"]), Ok(Flow::Help(_))));
-		assert!(matches!(parse(&["cs", "-h"]), Ok(Flow::Help(_))));
+		assert!(matches!(parse(&["loc", "--help"]), Ok(Flow::Help(_))));
+		assert!(matches!(parse(&["loc", "-h"]), Ok(Flow::Help(_))));
 	}
 
 	#[cfg(unix)]
 	#[test]
 	fn non_utf8_value_is_an_error() {
 		use std::os::unix::ffi::OsStringExt;
-		let argv = [OsString::from("cs"), OsString::from("--beta"), OsString::from_vec(vec![0xff])];
-		let result = parse_command(&SPEC, "cs", Args::default(), Parser::from_iter(argv), false, test_apply, positional);
+		let argv = [OsString::from("loc"), OsString::from("--beta"), OsString::from_vec(vec![0xff])];
+		let result = parse_command(&SPEC, "loc", Args::default(), Parser::from_iter(argv), false, test_apply, positional);
 		assert!(result.is_err());
 	}
 }

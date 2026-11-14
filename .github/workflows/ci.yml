@@ -78,16 +78,16 @@ jobs:
           file: Dockerfile
           platforms: ${{ matrix.platform }}
           load: true
-          tags: codestats-builder:${{ matrix.target }}
-          cache-from: type=gha,scope=codestats-${{ matrix.target }}
+          tags: loc-builder:${{ matrix.target }}
+          cache-from: type=gha,scope=loc-${{ matrix.target }}
       - name: Lint and test in image
         run: |
           docker run --rm --init \
             --platform "${{ matrix.platform }}" \
             -e CI \
-            -v "$GITHUB_WORKSPACE:/codestats" \
-            -w /codestats \
-            codestats-builder:${{ matrix.target }} \
+            -v "$GITHUB_WORKSPACE:/loc" \
+            -w /loc \
+            loc-builder:${{ matrix.target }} \
             sh -ec '
               rustup component add clippy
               cargo clippy --workspace --all-targets -- -D warnings
@@ -123,4 +123,4 @@ jobs:
           gh release download "$LINEJUDGE_VERSION" -R loc-conformance/linejudge -p "linejudge-$LINEJUDGE_VERSION-linux-x86_64.tar.gz" -O - | tar xz
           echo "$PWD/linejudge-$LINEJUDGE_VERSION-linux-x86_64" >> "$GITHUB_PATH"
       - name: Check against the recorded answers
-        run: linejudge check --counter codestats
+        run: linejudge check --counter loc

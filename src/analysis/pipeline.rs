@@ -63,7 +63,7 @@ fn judge_name<'a>(
 		return None;
 	}
 	let include_generated = languages.include_generated || verdict.generated == Some(false);
-	// `linguist-language` decides where the name doesn't: a name only codestats knows (`*.bgt`, often mapped to AngelScript for GitHub's sake) keeps its own language.
+	// `linguist-language` decides where the name doesn't: a name only loc knows (`*.bgt`, often mapped to AngelScript for GitHub's sake) keeps its own language.
 	let candidates = match (verdict.language, langs::get_candidates(name)) {
 		(Some(language), candidates) if candidates.len() != 1 => vec![language],
 		(_, candidates) => candidates,

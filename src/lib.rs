@@ -2,7 +2,7 @@
 #![deny(warnings)]
 
 #[cfg(target_os = "windows")]
-compile_error!("codestats does not support Windows; use the Linux (musl static) or macOS builds");
+compile_error!("loc does not support Windows; use the Linux (musl static) or macOS builds");
 
 pub mod analysis;
 pub mod cli;
