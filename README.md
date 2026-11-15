@@ -208,7 +208,7 @@ loc uses the first of these files that exists:
 1. The file you pass with `--config <path>`. It's an error if this file doesn't exist.
 2. `./.loc.toml`
 3. `./loc.toml`
-4. `~/.config/loc/config.toml`
+4. On Linux, `${XDG_CONFIG_HOME:-~/.config}/loc/config.toml`; on macOS, `~/Library/Application Support/loc/config.toml`.
 5. `~/.loc.toml`
 
 To ignore all of these files, for example in a benchmark or a script that has to behave the same on every machine, pass `--no-config`.
@@ -306,7 +306,7 @@ To ignore linguist attributes, pass `--no-gitattributes`.
 
 ### Memory-mapped files
 
-loc memory-maps files of 64 KB or larger, which makes reading them faster. Don't modify files while loc is counting them.
+loc memory-maps files of 256 KiB or larger, which makes reading them faster. Don't modify files while loc is counting them.
 
 ### Threads
 
