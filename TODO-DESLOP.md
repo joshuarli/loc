@@ -7,6 +7,21 @@ Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/mai
 
 Ground: base `9ea3b7a521a3a6e8d1d95d0623080edd4fa51573`; `make test` cold 10.16s, warm 1.56s; `make lint` under 4s. PR CI runs `make test`; no missing-tool test skips found. Performance workload: `count_generated_corpus` in `benches/bench.rs`, baseline `benches/baseline.json`. Open fleet lint findings: rust-collections 12, linux-musl-toolchain 4, audit-upgrades 2, binary-release-static 1, make-clean-target 1, owned-tool-support 1, registry-sources 1, topics 1.
 
+
+Types (DSLP-3): escape-hatch matching lines 326 → 326; no settings adopted. Unique findings below include production and bench targets, excluding tests for unwrap/expect. Real means demonstrated defect or removable trust; FP means intentional/justified use. Zero-finding settings lack evidence for adoption.
+
+| Setting | Findings | Real / removable trust | FP | Decision |
+| --- | ---: | ---: | ---: | --- |
+| unsafe_code forbid | 5 | 0 | 5 | Reject: mmap and SIMD require unsafe on this host. |
+| wildcard_enum_match_arm | 7 | 0 | 7 | Reject: guarded fallbacks, non-exhaustive enum, and test matches. |
+| match_wildcard_for_single_variants | 0 | 0 | 0 | Reject: no witness. |
+| cast_possible_truncation | 0 | 0 | 0 | Reject: no witness. |
+| cast_sign_loss | 0 | 0 | 0 | Reject: no witness. |
+| unwrap_used outside tests | 15 | 0 | 15 | Reject: benchmark setup and measurements. |
+| expect_used outside tests | 13 | 2 | 11 | Reject: invariant and failure checks exceed FP budget; two block-comment assertions could carry more precise inputs. |
+| redundant_clone | 0 | 0 | 0 | Reject: no witness. |
+| needless_pass_by_value | 0 | 0 | 0 | Reject: no witness. |
+
 ## Tickets
 
 
@@ -20,14 +35,6 @@ Ground: base `9ea3b7a521a3a6e8d1d95d0623080edd4fa51573`; `make test` cold 10.16s
 - **Effort:** M
 
 
-### DSLP-3 · P2 · Types: strict profile and typing findings
-
-- **Area:** deslop · types
-- **Where:** type checker and lint configuration; Rust/Python/TypeScript sources
-- **Problem:** The strict-profile candidates in the deslop skill's tools reference have not been measured here.
-- **Recommendation:** Run the deslop Types step. Accept: clean at the adopted profile, escape hatches not increased, witnesses recorded.
-- **Fix with:** deslop
-- **Effort:** M
 
 ### DSLP-4 · P2 · Tests: coverage, boundary gaps, mutation
 
