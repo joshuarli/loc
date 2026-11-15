@@ -40,7 +40,7 @@ Not started.
 
 - **Area:** deslop · tests
 - **Where:** test suites and CI
-- **Problem:** Coverage and mutation results are unmeasured; no deslop mutation lane exists.
+- **Problem:** Coverage and mutation results are unmeasured; no deslop mutation lane exists. Calibration (2026-11-15): cargo llvm-cov --branch gives 93.0% lines and 84.5% branches in 10s. cargo mutants lists 2433 mutants; a 1/20 shard (--shard 0/20, --jobs 4, --timeout 20) tested 122 in 405s: 53 caught, 19 missed, 49 unviable, 1 timeout, so a full run is about 2.3 hours on one Mac and the Tests step must target critical modules (counting, language detection, file selection). Sampled survivors were in src/cli/mod.rs (11), src/langs.rs (4), src/config_discovery.rs (2), src/analysis.rs (2).
 - **Recommendation:** Run the deslop Tests step. Accept: no undispositioned survivor in critical code, the test cost budget holds, and the lane is green where the tools are mirrored.
 - **Fix with:** deslop
 - **Effort:** M
