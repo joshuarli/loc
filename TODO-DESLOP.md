@@ -5,18 +5,10 @@ Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/mai
 
 ## Report
 
-Not started.
+Ground: base `9ea3b7a521a3a6e8d1d95d0623080edd4fa51573`; `make test` cold 10.16s, warm 1.56s; `make lint` under 4s. PR CI runs `make test`; no missing-tool test skips found. Performance workload: `count_generated_corpus` in `benches/bench.rs`, baseline `benches/baseline.json`. Open fleet lint findings: rust-collections 12, linux-musl-toolchain 4, audit-upgrades 2, binary-release-static 1, make-clean-target 1, owned-tool-support 1, registry-sources 1, topics 1.
 
 ## Tickets
 
-### DSLP-1 · P2 · Ground: baseline, boundaries, and CI test entry point
-
-- **Area:** deslop · ground
-- **Where:** AGENTS.md, Makefile, .github/workflows/
-- **Problem:** Base e533792; code lines Rust 12.2k, Python 0.2k, TypeScript 0.0k (fleet/loc/v1, vendored included); timings not yet measured. Open fleet lint findings: rust-collections 12, linux-musl-toolchain 4, audit-upgrades 2, binary-release-static 1, make-clean-target 1, owned-tool-support 1, registry-sources 1, topics 1. Perf gate applies: rustybench benches/baseline.json.
-- **Recommendation:** Run the deslop Ground step. Accept: CI runs make test and is green, and AGENTS.md has a Verification section.
-- **Fix with:** deslop
-- **Effort:** S
 
 ### DSLP-2 · P2 · Diagnose: ultrareview into this backlog
 
