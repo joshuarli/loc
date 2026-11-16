@@ -314,6 +314,20 @@ fn paths_can_come_from_standard_input() {
 	assert_eq!(count(b"src\nc.rs\nc.rs\n.hidden/d.rs\n", &[]), 3);
 	assert_eq!(count(b"c.rs\0src/a.rs\0", &[]), 2);
 	assert_eq!(count(b"src\n", &["-e", "nested"]), 1);
+	assert_eq!(count(b"src\nsrc/a.rs\nsrc/nested\n", &[]), 2);
+	assert_eq!(count(b"src/a.rs\n./src/a.rs\nsrc/nested/../a.rs\n", &[]), 1);
+	let absolute = format!("src/a.rs\n{}\n", root.join("src/a.rs").display());
+	assert_eq!(count(absolute.as_bytes(), &[]), 1);
+	assert_eq!(count(b"src\0src/nested\0src/nested/b.rs\0", &[]), 2);
+	assert_eq!(count(b"src\nsrc/nested/b.rs\n", &["--max-depth", "1"]), 1);
+	std::os::unix::fs::symlink("src/a.rs", root.join("alias.rs")).unwrap();
+	std::os::unix::fs::symlink("src", root.join("alias-dir")).unwrap();
+	assert_eq!(count(b"src/a.rs\nalias.rs\n", &[]), 1);
+	assert_eq!(count(b"alias-dir\nsrc/a.rs\n", &[]), 1);
+	assert_eq!(count(b"src\nalias-dir\n", &["--symlinks"]), 2);
+	assert_eq!(count(b"src\nsrc/a.rs\nsrc/nested\n", &["-e", "nested"]), 1);
+	let parallel_aliases: String = (0..300).map(|n| format!("{}src/a.rs\n", "./".repeat(n))).collect();
+	assert_eq!(count(parallel_aliases.as_bytes(), &[]), 1);
 	let output = loc().current_dir(&root).args(["-", "c.rs"]).output().unwrap();
 	assert!(!output.status.success());
 }

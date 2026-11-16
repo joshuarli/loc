@@ -22,17 +22,24 @@ Types (DSLP-3): escape-hatch matching lines 326 → 326; no settings adopted. Un
 | redundant_clone | 0 | 0 | 0 | Reject: no witness. |
 | needless_pass_by_value | 0 | 0 | 0 | Reject: no witness. |
 
+## Accepted findings
+
+DSLP-6 is fixed in [#11](https://github.com/joshuarli/loc/pull/11). Listed files
+and directory walks share counted canonical paths after selection. The CLI
+regression fails before the repair (four files instead of two) and passes for
+overlaps, path spellings, NUL lists, exclusions, depth, symlink aliases and 300
+aliases across worker batches. Local `cpu-guard --cores 6 -- make test lint`
+passes; macOS and both Linux musl CI jobs pass at code head `7618617`.
+
+Five interleaved pairs of ten dist-profile CLI processes on the 800-file
+generated benchmark corpus have identical output and no difference exceeding
+both the observed spread and 2%. Walk medians are 15.484/16.344 ms;
+unique-stdin medians are 6.604/6.680 ms (baseline/candidate). Gate checks
+returned zero before and after both workloads. Both binaries are 1,946,672
+bytes; five walk maximum-RSS samples overlap (4,653,056–4,669,440 before,
+4,587,520–4,685,824 after). Full method and evidence are in the PR.
+
 ## Tickets
-
-
-### DSLP-6 · P1 · Overlapping standard-input paths count files more than once
-
-- **Area:** analysis · file selection
-- **Where:** src/analysis/list.rs:28, src/analysis/list.rs:79, src/analysis/list.rs:125, tests/cli.rs:313
-- **Problem:** A list containing a directory and a file inside it reports the file twice: a built CLI run with one one-line Rust file returned file_count 2 and total lines 2. Only byte-identical list entries are deduplicated, then listed files and directories are counted independently; the existing test covers an exact repeated filename but no overlap. This silently inflates counts. Test-gap finding: include src/analysis/list.rs and src/analysis/walk.rs in critical mutation scope.
-- **Recommendation:** Deduplicate overlapping listed paths and equivalent spellings while preserving the list filters and symlink behavior; cover overlapping directories and files through the CLI.
-- **Fix with:** root-cause
-- **Effort:** M
 
 
 

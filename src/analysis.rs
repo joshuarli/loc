@@ -62,6 +62,7 @@ pub mod bench {
 				include_generated: true,
 				attributes: None,
 				extensions: &[],
+				counted: None,
 			},
 			&mut attributes::DirCache::default(),
 		)

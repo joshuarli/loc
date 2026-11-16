@@ -66,9 +66,13 @@ impl CodeAnalyzer {
 	/// - File I/O operations fail during analysis
 	/// - UTF-8 decoding fails for file contents
 	pub fn analyze(&self) -> Result<AnalysisResults> {
+		self.analyze_counted(None)
+	}
+
+	pub(super) fn analyze_counted(&self, counted: Option<&pipeline::CountedPaths>) -> Result<AnalysisResults> {
 		if self.config.analysis.git_tracked_only {
 			let snapshot = git::Snapshot::WorkingTree { submodules: true };
-			return git::count_snapshot(&self.root, &snapshot, &self.config.analysis, self.config.collect_file_details)
+			return git::count_snapshot_counted(&self.root, &snapshot, &self.config.analysis, self.config.collect_file_details, counted)
 				.map_err(|err| anyhow::anyhow!("--git: {err}"));
 		}
 		let error_counter = AtomicU64::new(0);
@@ -91,6 +95,7 @@ impl CodeAnalyzer {
 			include_generated: self.config.analysis.include_generated,
 			attributes: attributes.as_ref(),
 			extensions: &self.config.analysis.include_extensions,
+			counted,
 		};
 		walk::walk(&self.root, options, &|| {
 			let mut aggregator = LocalAggregator { sink: &aggregates, local: AnalysisResults::default() };

@@ -35,7 +35,9 @@ pub fn parse_list(list: &[u8]) -> Vec<PathBuf> {
 		.collect()
 }
 
-/// Count the files in `paths` as they're named, and walk the directories among them, with the filters a walk applies except `.gitignore`, since the list chose the files.
+/// Count each selected canonical file once across listed files and directory walks.
+///
+/// Explicit files use walk filters except `.gitignore`, since the list chose them.
 ///
 /// # Errors
 ///
@@ -48,12 +50,14 @@ pub fn count_listed(paths: &[PathBuf], config: &AnalyzerConfig) -> Result<Analys
 	let analysis = &config.analysis;
 	let filter = PathFilter::new(Path::new("."), analysis, false)?;
 	let attributes = analysis.respect_gitattributes.then(|| Attributes::on_disk(Path::new("")));
+	let counted = pipeline::CountedPaths::default();
 	let languages = FileFilter {
 		include: &analysis.include_languages,
 		exclude: &analysis.exclude_languages,
 		include_generated: analysis.include_generated,
 		attributes: attributes.as_ref(),
 		extensions: &analysis.include_extensions,
+		counted: Some(&counted),
 	};
 	let verbose = analysis.verbosity == Verbosity::Verbose;
 	let next = AtomicUsize::new(0);
@@ -124,7 +128,7 @@ pub fn count_listed(paths: &[PathBuf], config: &AnalyzerConfig) -> Result<Analys
 	all.set_skipped_entries(all.skipped_entries() + skipped);
 	dirs.sort_unstable();
 	for dir in &dirs {
-		all.merge(CodeAnalyzer::new(dir, config.clone()).showing_root().analyze()?);
+		all.merge(CodeAnalyzer::new(dir, config.clone()).showing_root().analyze_counted(Some(&counted))?);
 	}
 	Ok(all)
 }

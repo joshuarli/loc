@@ -98,6 +98,16 @@ pub fn count_snapshot(
 	config: &AnalysisConfig,
 	collect_details: bool,
 ) -> Result<AnalysisResults> {
+	count_snapshot_counted(root, snapshot, config, collect_details, None)
+}
+
+pub(super) fn count_snapshot_counted(
+	root: &Path,
+	snapshot: &Snapshot,
+	config: &AnalysisConfig,
+	collect_details: bool,
+	selected: Option<&pipeline::CountedPaths>,
+) -> Result<AnalysisResults> {
 	let (dir, pathspec) = locate(root);
 	let pathspec = pathspec.to_string_lossy();
 	let listing = match snapshot {
@@ -116,6 +126,7 @@ pub fn count_snapshot(
 		include_generated: config.include_generated,
 		attributes: attributes.as_ref(),
 		extensions: &config.include_extensions,
+		counted: selected,
 	};
 	let records: Vec<&[u8]> = listing.split(|&b| b == 0).filter(|record| !record.is_empty()).collect();
 	// Workers take batches from a shared counter, so they stay evenly loaded, and each batch is a run of nearby paths.
