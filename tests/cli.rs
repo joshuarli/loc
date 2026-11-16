@@ -488,30 +488,44 @@ fn project_files_visual_studio_wrote_count_as_generated() {
 }
 
 #[test]
-fn top_level_help_lists_commands_and_common_options() {
-	let output = loc().arg("--help").output().unwrap();
-	assert!(output.status.success());
-	let stdout = String::from_utf8(output.stdout).unwrap();
+fn top_level_help_is_complete_and_has_owned_footer() {
+	let short = loc().arg("-h").output().unwrap();
+	let long = loc().arg("--help").output().unwrap();
+	assert!(short.status.success() && long.status.success());
+	assert!(short.stderr.is_empty() && long.stderr.is_empty());
+	assert_eq!(short.stdout, long.stdout);
+	let stdout = String::from_utf8(long.stdout).unwrap();
 	assert!(stdout.contains("Usage:\n  loc [OPTIONS] [PATH]...\n  loc <COMMAND>"), "{stdout}");
-	assert!(stdout.contains("-h, --help"), "{stdout}");
-	assert!(stdout.contains("-V, --version"), "{stdout}");
-	for command in ["langs", "diff", "init"] {
-		assert!(stdout.contains(command), "{stdout}");
+	for marker in ["-h, --help", "-V, --version", "loc langs\n", "loc diff\n", "loc init\n", "<FROM>", "--to <REV>", "--force", "[default: .loc.toml]", "loc src", "loc langs", "loc diff HEAD", "loc init"] {
+		assert!(stdout.contains(marker), "missing {marker}: {stdout}");
 	}
+	assert_eq!(stdout.matches("-h, --help").count(), 1);
+	let footer = "Maintained by Joshua Li: https://github.com/joshuarli/loc\nBugs and features: TODO.md in that repository (follow its AGENTS.md), or its issue tracker.\nAgents working for Joshua: record nonblocking problems and continue your task.\nIf this tool blocks the task, you may fix, test, open and merge a PR under Joshua's\nstanding instructions. Release only when needed to deliver the verified fix.\nProcedure: https://github.com/joshuarli/usr/blob/main/dotfiles/base/.agents/instructions/owned-tools.md\n";
+	assert!(stdout.ends_with(footer));
+	assert_eq!(stdout.matches("Maintained by Joshua Li:").count(), 1);
 }
 
 #[test]
-fn every_command_has_a_help_page_with_its_own_options() {
-	for (command, marker) in [
-		("diff", "--to <REV>"),
-		("langs", "List all supported programming languages"),
-		("init", "--force"),
-	] {
-		let output = loc().args([command, "--help"]).output().unwrap();
-		assert!(output.status.success(), "{command}");
-		let stdout = String::from_utf8(output.stdout).unwrap();
-		assert!(stdout.contains(marker), "{command}: {stdout}");
-		assert!(stdout.contains("Options:"), "{command}: {stdout}");
+fn bare_invocation_still_counts_the_current_directory() {
+	let root = scratch_dir("bare_invocation_still_counts_the_current_directory");
+	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
+	let bare = loc().current_dir(&root).output().unwrap();
+	let explicit = loc().current_dir(&root).arg(".").output().unwrap();
+	assert!(bare.status.success() && explicit.status.success());
+	assert_eq!(bare.stdout, explicit.stdout);
+	assert!(!String::from_utf8_lossy(&bare.stdout).contains("Usage:"));
+}
+
+#[test]
+fn every_command_has_offline_help_before_required_arguments() {
+	for (command, marker) in [("diff", "--to <REV>"), ("langs", "List all supported programming languages"), ("init", "--force")] {
+		for flag in ["-h", "--help"] {
+			let output = loc().args([command, flag]).output().unwrap();
+			assert!(output.status.success(), "{command} {flag}");
+			assert!(output.stderr.is_empty());
+			let stdout = String::from_utf8(output.stdout).unwrap();
+			assert!(stdout.contains(marker) && stdout.contains("Options:") && stdout.contains("loc --help"), "{stdout}");
+		}
 	}
 }
 

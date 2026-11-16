@@ -30,6 +30,7 @@ const FROM_POSITIONAL: PositionalSpec = PositionalSpec {
 
 pub static DIFF_SPEC: CommandSpec = CommandSpec {
 	description: "Compare line counts between two versions of a git repository, by language",
+	example: &["loc", "diff", "HEAD"],
 	options: &[
 		analyze::CONFIG,
 		analyze::NO_CONFIG,
@@ -101,7 +102,7 @@ pub(super) fn run(full_name: &str, argv: Vec<std::ffi::OsString>) -> std::proces
 	super::exit_with(parse(full_name, argv), |args, seen| execute(&args, &seen))
 }
 
-fn parse(full_name: &str, argv: Vec<std::ffi::OsString>) -> Result<Flow<DiffArgs>, CliError> {
+pub(super) fn parse(full_name: &str, argv: Vec<std::ffi::OsString>) -> Result<Flow<DiffArgs>, CliError> {
 	let flow = command::parse_command(
 		&DIFF_SPEC,
 		full_name,

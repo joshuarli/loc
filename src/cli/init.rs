@@ -20,6 +20,7 @@ const FORCE: OptionSpec = OptionSpec::flag(FORCE_ID, Some('f'), "force", "Overwr
 
 pub static INIT_SPEC: CommandSpec = CommandSpec {
 	description: "Generate a default configuration file",
+	example: &["loc", "init"],
 	options: &[OUTPUT, FORCE],
 	positionals: &[],
 	subcommands: &[],
@@ -34,7 +35,7 @@ pub fn run(full_name: &str, argv: Vec<OsString>) -> ExitCode {
 }
 
 #[derive(Default)]
-struct InitArgs {
+pub(super) struct InitArgs {
 	output: Option<PathBuf>,
 	force: bool,
 }
@@ -50,7 +51,7 @@ fn apply_option(option: &'static OptionSpec, args: &mut InitArgs, raw: Option<Os
 	Ok(())
 }
 
-fn parse(full_name: &str, argv: Vec<OsString>) -> Result<Flow<InitArgs>, CliError> {
+pub(super) fn parse(full_name: &str, argv: Vec<OsString>) -> Result<Flow<InitArgs>, CliError> {
 	command::parse_command(
 		&INIT_SPEC,
 		full_name,
