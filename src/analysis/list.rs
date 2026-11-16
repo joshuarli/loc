@@ -35,8 +35,9 @@ pub fn parse_list(list: &[u8]) -> Vec<PathBuf> {
 		.collect()
 }
 
-/// Count the files in `paths` as they're named, and walk the directories among them, with the filters a walk applies except `.gitignore`, since the list chose the files.
-/// Each selected canonical file is counted once across listed files and directory walks.
+/// Count each selected canonical file once across listed files and directory walks.
+///
+/// Explicit files use walk filters except `.gitignore`, since the list chose them.
 ///
 /// # Errors
 ///
