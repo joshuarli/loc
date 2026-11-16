@@ -23,7 +23,7 @@ pub fn render_page(full_name: &str, spec: &CommandSpec, version: bool) -> String
 	if let Some(note) = spec.note {
 		let _ = writeln!(out, "\n{note}");
 	}
-	let _ = writeln!(out, "\nExample:\n  {}", spec.example.join(" "));
+	let _ = writeln!(out, "\nExamples:\n  {}", spec.example.join(" "));
 	if version {
 		let _ = write!(out, "\n{FOOTER}");
 	} else {
@@ -44,7 +44,7 @@ fn render_command(out: &mut String, name: &str, spec: &CommandSpec, inherited: &
 	if !own.is_empty() {
 		render_options(out, own.into_iter(), false, false);
 	}
-	let _ = writeln!(out, "\nExample:\n  {}", spec.example.join(" "));
+	let _ = writeln!(out, "\nExamples:\n  {}", spec.example.join(" "));
 	for command in spec.subcommands {
 		render_command(out, &format!("{name} {}", command.name), command.spec, spec.options);
 	}
