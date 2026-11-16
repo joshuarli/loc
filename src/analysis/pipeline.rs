@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fs::File, io::Seek as _, path::Path};
+use std::{borrow::Cow, collections::HashSet, fs::File, io::Seek as _, path::{Path, PathBuf}, sync::{Mutex, PoisonError}};
 
 use anyhow::{Context as _, Result};
 
@@ -15,6 +15,16 @@ use crate::langs::{self, Language, RequireKeywords};
 /// How much of a file to read when its extension is shared by several languages and its content decides.
 const DETECTION_WINDOW: usize = 64 * 1024;
 
+#[derive(Default)]
+pub(super) struct CountedPaths(Mutex<HashSet<PathBuf>>);
+
+impl CountedPaths {
+	fn insert(&self, path: &Path) -> Result<bool> {
+		let path = path.canonicalize()?;
+		Ok(self.0.lock().unwrap_or_else(PoisonError::into_inner).insert(path))
+	}
+}
+
 /// Which files count: the `--lang` and `--exclude-lang` filters, `--include-generated`, and the project's `.gitattributes`.
 #[derive(Clone, Copy)]
 pub struct FileFilter<'a> {
@@ -24,6 +34,7 @@ pub struct FileFilter<'a> {
 	pub attributes: Option<&'a Attributes>,
 	/// `--ext`: only files with these extensions count, when there are any.
 	pub extensions: &'a [String],
+	pub counted: Option<&'a CountedPaths>,
 }
 
 impl FileFilter<'_> {
@@ -201,6 +212,10 @@ pub fn process_file(
 	}
 	let source = FileSource::open(file, file_size, file_path)?;
 	if let Some((language, counts)) = count_contents(&candidates, &filename, &source, languages) {
+		if let Some(counted) = languages.counted
+			&& !counted.insert(file_path)? {
+			return Ok(());
+		}
 		results.add_file(language, counts, file_size, collect_details.then(|| display_path(file_path, display_root)));
 	}
 	Ok(())
@@ -240,6 +255,7 @@ mod tests {
 					include_generated: true,
 					attributes: None,
 					extensions: &[],
+					counted: None,
 				};
 				let mut results = AnalysisResults::default();
 				process_file(&path, &root, &mut results, true, languages, &mut DirCache::default()).unwrap();

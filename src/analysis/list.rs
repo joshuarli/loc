@@ -48,12 +48,14 @@ pub fn count_listed(paths: &[PathBuf], config: &AnalyzerConfig) -> Result<Analys
 	let analysis = &config.analysis;
 	let filter = PathFilter::new(Path::new("."), analysis, false)?;
 	let attributes = analysis.respect_gitattributes.then(|| Attributes::on_disk(Path::new("")));
+	let counted = pipeline::CountedPaths::default();
 	let languages = FileFilter {
 		include: &analysis.include_languages,
 		exclude: &analysis.exclude_languages,
 		include_generated: analysis.include_generated,
 		attributes: attributes.as_ref(),
 		extensions: &analysis.include_extensions,
+		counted: Some(&counted),
 	};
 	let verbose = analysis.verbosity == Verbosity::Verbose;
 	let next = AtomicUsize::new(0);
@@ -124,7 +126,7 @@ pub fn count_listed(paths: &[PathBuf], config: &AnalyzerConfig) -> Result<Analys
 	all.set_skipped_entries(all.skipped_entries() + skipped);
 	dirs.sort_unstable();
 	for dir in &dirs {
-		all.merge(CodeAnalyzer::new(dir, config.clone()).showing_root().analyze()?);
+		all.merge(CodeAnalyzer::new(dir, config.clone()).showing_root().analyze_counted(Some(&counted))?);
 	}
 	Ok(all)
 }
