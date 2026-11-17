@@ -289,4 +289,21 @@ mod tests {
 		assert_eq!(counts.shebang, 1);
 		assert_eq!(counts.code, 1);
 	}
+
+	#[test]
+	fn invalid_utf8_keeps_first_line_and_bom_rules() {
+		let python = crate::langs::LANGUAGES.iter().find(|l| l.name == "Python").unwrap();
+		let cases: &[(&[u8], usize)] = &[
+			(b"#!/usr/bin/python\xFF\n#!/ignored\n# note\nvalue = 1\n\n", 0),
+			(b"\xEF\xBB\xBF#!/usr/bin/python\xFF\n#!/ignored\n# note\nvalue = 1\n\n", 3),
+			(b"\xEF\xBB\xBF#!/usr/bin/python\n#!/ignored\xFF\n# note\nvalue = 1\n\n", 3),
+			(b"#!/usr/bin/python\xFF\n#!/usr/bin/python\n# note\nvalue = 1\n\n", 0),
+		];
+		for &(bytes, bom_len) in cases {
+			let encoding = FileEncoding { encoding: encoding_rs::UTF_8, bom_len };
+			let counted = count_lines(python, encoding, bytes);
+			assert_eq!(counted.lines, LineCounts { total: 5, code: 1, comment: 2, blank: 1, shebang: 1 });
+			assert_eq!(counted.embedded.total(), 0);
+		}
+	}
 }
