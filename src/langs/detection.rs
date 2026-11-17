@@ -68,6 +68,54 @@ mod tests {
 	}
 
 	#[test]
+	fn admission_and_default_reach_the_counting_consumer() {
+		use std::path::Path;
+		use crate::analysis::bench::detect_and_count;
+		use crate::analysis::LineCounts;
+
+		let bytes = b"#pragma once\n// header\n\nint value;\n";
+		let candidates = get_candidates("example.h");
+		let no_content = detect_language(&candidates, None);
+		assert_eq!(no_content.language.map(|language| language.name), Some("C"));
+		assert!(!no_content.close_call);
+		let (language, counts) = detect_and_count(Path::new("example.h"), bytes).unwrap();
+		assert_eq!(language.name, "C");
+		assert_eq!(counts.lines, LineCounts { total: 4, code: 2, comment: 1, blank: 1, shebang: 0 });
+		assert!(detect_and_count(Path::new("unknown.zzzzqq"), b"plain text\n").is_none());
+	}
+
+	#[test]
+	fn detection_reports_uncertain_and_decisive_samples() {
+		static OVERRIDABLE_RUST: std::sync::OnceLock<Language> = std::sync::OnceLock::new();
+		let candidates = get_candidates("example.h");
+		for (content, expected, close) in [
+			("plain text", Some("C"), true),
+			("namespace", Some("C++"), true),
+			("namespace namespace namespace", Some("C++"), false),
+			("namespace namespace namespace virtual virtual virtual template template template", Some("C++"), false),
+		] {
+			let detected = detect_language(&candidates, Some(content));
+			assert_eq!((detected.language.map(|language| language.name), detected.close_call), (expected, close), "{content}");
+		}
+		let unknown = get_candidates("script.zzzzqq");
+		let detected = detect_language(&unknown, Some("plain text"));
+		assert_eq!((detected.language.map(|language| language.name), detected.close_call), (None, false));
+		let detected = detect_language(&unknown, Some("#!/usr/bin/env python3\npass\n"));
+		assert_eq!((detected.language.map(|language| language.name), detected.close_call), (Some("Python"), false));
+		let detected = detect_language(&get_candidates("latex-access.ctb"), Some("#!/usr/bin/python3\npass\n"));
+		assert_eq!((detected.language.map(|language| language.name), detected.close_call), (Some("Python"), false));
+		// Public callers can supply a language that permits a shebang override, even though the shipped table has none.
+		let rust = OVERRIDABLE_RUST.get_or_init(|| {
+			let mut language = crate::langs::language_named("Rust").unwrap().clone();
+			language.shebang_overrides = true;
+			language
+		});
+		let detected = detect_language(&[rust], Some("#!/usr/bin/python3\npass\n"));
+		assert_eq!((detected.language.map(|language| language.name), detected.close_call), (Some("Python"), false));
+		assert_eq!(detect_language(&[rust], None).language.map(|language| language.name), Some("Rust"));
+	}
+
+	#[test]
 	fn detect_language_info_disambiguates_real_languages() {
 		let content = "@interface Foo : NSObject\n@end\n";
 		let language = detect_language_info("example.m", Some(content)).unwrap();

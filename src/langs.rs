@@ -67,6 +67,16 @@ mod tests {
 	use super::get_candidates;
 
 	#[test]
+	fn admission_keeps_only_the_most_specific_patterns() {
+		let names = |filename| get_candidates(filename).iter().map(|language| language.name).collect::<Vec<_>>();
+		assert_eq!(names(".env.fish"), ["Dotenv", "Fish"]);
+		assert_eq!(names(".env.rs"), ["Dotenv"]);
+		assert_eq!(names("page.BLADE.PHP"), ["Blade"]);
+		assert_eq!(names("Kconfig.rst"), ["Kconfig"]);
+		assert_eq!(names("kconfig.rst"), ["reStructuredText"]);
+	}
+
+	#[test]
 	fn get_candidates_uses_literal_map() {
 		let candidates = get_candidates("Makefile");
 		assert_eq!(candidates.len(), 1);
