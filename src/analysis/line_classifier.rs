@@ -641,6 +641,35 @@ mod tests {
 		assert_eq!(is_preprocessor_directive(line), expected);
 	}
 
+	#[test]
+	fn assembly_preprocessor_conditions_and_comments() {
+		let lines = [
+			"# if (FEATURE)",
+			"# elif !defined(DISABLED)",
+			"# if 1",
+			"# elif FEATURE",
+			"# if defined(FEATURE)",
+			"# if the feature is available",
+			"# elif fallback is needed",
+			"# else continue normally",
+			"# save the frame pointer",
+		];
+		assert_eq!(
+			classify_all("Assembly", &lines),
+			[
+				LineType::Code,
+				LineType::Code,
+				LineType::Code,
+				LineType::Code,
+				LineType::Code,
+				LineType::Comment,
+				LineType::Comment,
+				LineType::Comment,
+				LineType::Comment,
+			]
+		);
+	}
+
 	#[rstest]
 	#[case::toml_multiline("TOML", &["s = \"\"\"", "# not a comment", "\"\"\"", "# c"], &[LineType::Code, LineType::Code, LineType::Code, LineType::Comment])]
 	#[case::toml_literal("TOML", &["p = '''", "# not a comment", "'''"], &[LineType::Code, LineType::Code, LineType::Code])]
