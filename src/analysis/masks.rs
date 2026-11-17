@@ -264,6 +264,30 @@ mod tests {
 		assert_eq!(counts, LineCounts { total: 2, code: 1, comment: 1, blank: 0, shebang: 0 });
 	}
 
+	#[test]
+	fn sweep_counts_tails_and_stops_on_markers_at_byte_boundaries() {
+		for length in [15, 16, 31, 32, 63, 64, 65, 127, 128] {
+			let mut text = vec![b' '; length];
+			text.extend_from_slice(b"x\n\t\r\x0b\x0c \n# note\n  \nlast");
+			let Some(mut scanner) = BlockScanner::new(&text) else { return };
+			let mut counts = LineCounts::default();
+			let marker = length + 8;
+			assert_eq!(scanner.sweep(0, b"#", LineType::Code, &mut counts), (marker, true), "length {length}");
+			assert_eq!(counts, LineCounts { total: 2, code: 1, comment: 0, blank: 1, shebang: 0 });
+			assert_eq!(scanner.sweep(marker, b"!", LineType::Comment, &mut counts), (text.len(), false));
+			assert_eq!(counts, LineCounts { total: 5, code: 1, comment: 2, blank: 2, shebang: 0 });
+		}
+		for offset in [15, 16, 31, 32, 63, 64, 65, 127, 128] {
+			let mut text = b"p\n".to_vec();
+			text.resize(offset, b' ');
+			text.extend_from_slice(b"# marker");
+			let Some(mut scanner) = BlockScanner::new(&text) else { return };
+			let mut counts = LineCounts::default();
+			assert_eq!(scanner.sweep(0, b"#", LineType::Code, &mut counts), (2, true), "offset {offset}");
+			assert_eq!(counts, LineCounts { total: 1, code: 1, comment: 0, blank: 0, shebang: 0 });
+		}
+	}
+
 	/// Lines of every length around the block size, with markers and whitespace on either side of a block's edge, count as a look at each line would.
 	#[test]
 	fn sweeps_match_lines_across_block_edges() {
