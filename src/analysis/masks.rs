@@ -288,6 +288,15 @@ mod tests {
 		}
 	}
 
+	#[test]
+	fn rust_counting_preserves_results_when_scanner_choice_changes() {
+		use crate::analysis::{encoding::FileEncoding, line_counter::count_lines};
+		let rust = crate::langs::language_named("Rust").unwrap();
+		let text = format!("fn main() {{\n{}x\n  \n/* comment\n{}text\n\nend */\nlet s = \"hi\";\n\x0e\n\x1f\n}}", " ".repeat(65), " ".repeat(63));
+		let counts = count_lines(rust, FileEncoding { encoding: encoding_rs::UTF_8, bom_len: 0 }, text.as_bytes());
+		assert_eq!(counts.lines, LineCounts { total: 11, code: 6, comment: 3, blank: 2, shebang: 0 });
+	}
+
 	/// Lines of every length around the block size, with markers and whitespace on either side of a block's edge, count as a look at each line would.
 	#[test]
 	fn sweeps_match_lines_across_block_edges() {
