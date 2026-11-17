@@ -591,16 +591,25 @@ fn complete_multilanguage_reports() {
 
 #[test]
 fn unreadable_file_reports_output_and_fail_on_error_status() {
-	use std::os::unix::fs::PermissionsExt as _;
+	use std::os::unix::{fs::PermissionsExt as _, process::CommandExt as _};
 	let root = scratch_dir("unreadable_file_reports_output_and_fail_on_error_status");
+	fs::set_permissions(&root, fs::Permissions::from_mode(0o755)).unwrap();
 	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
+	fs::set_permissions(root.join("main.rs"), fs::Permissions::from_mode(0o644)).unwrap();
 	let secret = root.join("secret.py");
 	fs::write(&secret, "print(1)\n").unwrap();
 	fs::set_permissions(&secret, fs::Permissions::from_mode(0o000)).unwrap();
-	assert!(fs::File::open(&secret).is_err(), "fixture must actually be unreadable");
-	let run = |extra: &[&str]| loc().current_dir(&root)
-		.args(["--no-config", "--no-gitignore", "--no-gitattributes", "-o", "json-compact"])
-		.args(extra).output().unwrap();
+	let drop_privileges = fs::File::open(&secret).is_ok();
+	let run = |extra: &[&str]| {
+		let mut command = loc();
+		command.current_dir(&root)
+			.args(["--no-config", "--no-gitignore", "--no-gitattributes", "-o", "json-compact"])
+			.args(extra);
+		if drop_privileges {
+			command.gid(65534).uid(65534);
+		}
+		command.output().expect("could not run the CLI with the fixture permissions")
+	};
 	let normal = run(&[]);
 	let failed = run(&["--fail-on-error"]);
 	fs::set_permissions(&secret, fs::Permissions::from_mode(0o600)).unwrap();
