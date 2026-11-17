@@ -13,6 +13,7 @@ use super::{
 
 pub static LANGS_SPEC: CommandSpec = CommandSpec {
 	description: "List all supported programming languages",
+	example: &["loc", "langs"],
 	options: &[],
 	positionals: &[],
 	subcommands: &[],
@@ -30,7 +31,7 @@ pub fn run(full_name: &str, argv: Vec<OsString>) -> ExitCode {
 	})
 }
 
-fn parse(full_name: &str, argv: Vec<OsString>) -> Result<Flow<()>, CliError> {
+pub(super) fn parse(full_name: &str, argv: Vec<OsString>) -> Result<Flow<()>, CliError> {
 	command::parse_command(
 		&LANGS_SPEC,
 		full_name,

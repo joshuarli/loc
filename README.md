@@ -152,6 +152,8 @@ Starting with 1.0, JSON fields and configuration file keys only change in a new 
 
 `schema_version` increases whenever a JSON field is renamed, removed, or changes meaning. New fields can appear without a version change, so your scripts should ignore fields they don't recognize.
 
+`loc --help` prints the complete command reference, including examples for each command. Command-specific help is also available, for example `loc diff --help`.
+
 ## Command-line options
 
 Usage: `loc [OPTIONS] [PATH]...`

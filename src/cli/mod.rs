@@ -23,6 +23,7 @@ pub const BIN: &str = "loc";
 /// The specification of the main command, shared with the help renderer and the completion generators.
 pub static ROOT_SPEC: CommandSpec = CommandSpec {
 	description: "Count code, comment, blank, and shebang lines by language, as text or JSON",
+	example: &["loc", "src"],
 	options: &[
 		analyze::CONFIG,
 		analyze::NO_CONFIG,
@@ -53,21 +54,20 @@ pub static ROOT_SPEC: CommandSpec = CommandSpec {
 	],
 	positionals: &[analyze::PATH_POSITIONAL],
 	subcommands: &[
-		SubcommandSpec { name: "langs", about: "List all supported programming languages", spec: &langs::LANGS_SPEC, run: langs::run },
+		SubcommandSpec { name: "langs", spec: &langs::LANGS_SPEC, run: langs::run },
 		SubcommandSpec {
 			name: "diff",
-			about: "Compare line counts between two versions of a git repository, by language",
 			spec: &diff::DIFF_SPEC,
 			run: diff::run,
 		},
-		SubcommandSpec { name: "init", about: "Generate a default configuration file", spec: &init::INIT_SPEC, run: init::run },
+		SubcommandSpec { name: "init", spec: &init::INIT_SPEC, run: init::run },
 	],
 	conflicts: &[
 		(analyze::ids::QUIET, analyze::ids::VERBOSE),
 		(analyze::ids::NO_CONFIG, analyze::ids::CONFIG),
 		(analyze::ids::INCLUDE_LANG, analyze::ids::EXCLUDE_LANG),
 	],
-	note: Some("`loc diff` takes the source and format options above as well; see `loc diff --help`."),
+	note: None,
 };
 
 /// Parse `args` (including the program name, as from `std::env::args_os()`) and run the selected command.
@@ -260,10 +260,37 @@ mod tests {
 	}
 
 	#[test]
+	fn schema_examples_parse_without_running_commands() {
+		let example_argv = |spec: &CommandSpec| spec.example.iter().map(OsString::from).collect::<Vec<_>>();
+		assert!(matches!(analyze::parse_root(BIN, true, example_argv(&ROOT_SPEC)), Ok(Flow::Done(..))));
+		for command in ROOT_SPEC.subcommands {
+			assert_eq!(command.spec.example[..2], [BIN, command.name]);
+			let args = std::iter::once(OsString::from(format!("loc {}", command.name)))
+				.chain(command.spec.example.iter().skip(2).map(OsString::from)).collect();
+			let parsed = match command.name {
+				"diff" => matches!(diff::parse("loc diff", args), Ok(Flow::Done(..))),
+				"init" => matches!(init::parse("loc init", args), Ok(Flow::Done(..))),
+				"langs" => matches!(langs::parse("loc langs", args), Ok(Flow::Done(..))),
+				name => panic!("add parser coverage for {name}"),
+			};
+			assert!(parsed, "invalid example: {}", command.spec.example.join(" "));
+		}
+	}
+
+	#[test]
 	fn root_help_lists_every_command() {
 		let page = help::render_page(BIN, &ROOT_SPEC, true);
+		for spec in all_specs() {
+			for option in spec.options {
+				assert!(page.contains(&format!("--{}", option.long)), "root help omits --{}", option.long);
+			}
+			for positional in spec.positionals {
+				assert!(page.contains(positional.help), "root help omits {}", positional.name);
+			}
+			assert!(page.contains(&spec.example.join(" ")));
+		}
 		for command in ROOT_SPEC.subcommands {
-			assert!(page.contains(command.name), "root help does not mention {}", command.name);
+			assert!(page.contains(command.spec.description));
 		}
 	}
 }

@@ -58,13 +58,13 @@ pub struct PositionalSpec {
 
 pub struct SubcommandSpec {
 	pub name: &'static str,
-	pub about: &'static str,
 	pub spec: &'static CommandSpec,
 	pub run: fn(&str, Vec<OsString>) -> ExitCode,
 }
 
 pub struct CommandSpec {
 	pub description: &'static str,
+	pub example: &'static [&'static str],
 	pub options: &'static [OptionSpec],
 	pub positionals: &'static [PositionalSpec],
 	pub subcommands: &'static [SubcommandSpec],
@@ -225,6 +225,7 @@ mod tests {
 
 	const SPEC: CommandSpec = CommandSpec {
 		description: "test command",
+		example: &["loc"],
 		options: &[ALPHA, BETA, GAMMA, REPEATABLE],
 		positionals: &[],
 		subcommands: &[],
