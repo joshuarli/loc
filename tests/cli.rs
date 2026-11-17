@@ -33,6 +33,48 @@ fn closed_stdout_exits_quietly() {
 }
 
 #[test]
+fn help_exits_quietly_with_no_pipe_reader() {
+	let (reader, writer) = std::io::pipe().unwrap();
+	drop(reader);
+	let output = loc().arg("--help").stdout(writer).output().unwrap();
+	assert!(output.status.success(), "exit status {:?}", output.status);
+	assert!(output.stderr.is_empty(), "{}", String::from_utf8_lossy(&output.stderr));
+}
+
+#[test]
+fn root_options_with_values_preserve_subcommand_dispatch() {
+	let expected = loc().args(["langs", "--help"]).output().unwrap();
+	assert!(expected.status.success());
+	assert!(expected.stdout.starts_with(b"List all supported programming languages\n"));
+	let options: &[&[&str]] = &[
+		&["--verbose"],
+		&["--output=json"],
+		&["--output", "json"],
+		&["-ojson"],
+		&["-o", "json"],
+		&["-vojson"],
+		&["-vo", "json"],
+	];
+	for options in options {
+		let output = loc().args(*options).args(["langs", "--help"]).output().unwrap();
+		assert!(output.status.success(), "{options:?}: {}", String::from_utf8_lossy(&output.stderr));
+		assert_eq!(output.stdout, expected.stdout, "{options:?}");
+		assert!(output.stderr.is_empty(), "{options:?}");
+	}
+}
+
+#[test]
+fn stdin_operand_prevents_later_subcommand_dispatch() {
+	let output = loc().args(["--no-config", "-", "langs"]).stdin(Stdio::null()).output().unwrap();
+	assert_eq!(output.status.code(), Some(1));
+	assert!(output.stdout.is_empty());
+	assert_eq!(
+		String::from_utf8(output.stderr).unwrap(),
+		"Error: `-` reads the paths to count from standard input, so it can't be given with other paths\n"
+	);
+}
+
+#[test]
 fn by_dir_sorts_directories_by_file_count() {
 	let root = scratch_dir("by_dir_sorts_directories_by_file_count");
 	// `long` has the most lines, `many` the most files.
@@ -466,6 +508,38 @@ fn no_config_ignores_the_configuration_in_the_working_directory() {
 	assert_eq!(files(&["--no-config"]), 2);
 	let both = loc().current_dir(&root).args(["--no-config", "--config", ".loc.toml"]).output().unwrap();
 	assert_eq!(both.status.code(), Some(2));
+}
+
+#[test]
+fn configuration_discovery_prefers_local_then_platform_then_home() {
+	let root = scratch_dir("configuration_discovery");
+	let project = root.join("project");
+	let home = root.join("home");
+	let platform = if cfg!(target_os = "macos") { home.join("Library/Application Support") } else { home.join(".config") };
+	let config_dir = platform.join("loc");
+	fs::create_dir(&project).unwrap();
+	fs::create_dir_all(&config_dir).unwrap();
+	for (name, body) in [("main.rs", "fn main() {}\n"), ("main.py", "print(1)\n"), ("main.js", "let x = 1;\n"), ("main.sh", "echo yes\n")] {
+		fs::write(project.join(name), body).unwrap();
+	}
+	let configs = [
+		(project.join(".loc.toml"), "Rust"),
+		(project.join("loc.toml"), "Python"),
+		(config_dir.join("config.toml"), "Bash"),
+		(home.join(".loc.toml"), "JavaScript"),
+	];
+	for (path, language) in &configs {
+		fs::write(path, format!("[analysis]\ninclude_languages = [\"{language}\"]\n")).unwrap();
+	}
+	for (path, language) in configs {
+		let output = loc().current_dir(&project).env("HOME", &home).env_remove("XDG_CONFIG_HOME").args(["-o", "json"]).output().unwrap();
+		assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+		let languages = report["languages"].as_array().unwrap();
+		assert_eq!(languages.len(), 1, "{report}");
+		assert_eq!(languages[0]["name"], language, "{}", path.display());
+		fs::remove_file(path).unwrap();
+	}
 }
 
 #[test]

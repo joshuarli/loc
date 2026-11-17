@@ -64,7 +64,21 @@ pub fn print_all_languages(writer: &mut dyn Write, terminal_width: usize) -> Res
 
 #[cfg(test)]
 mod tests {
-	use super::get_candidates;
+	use super::{LANGUAGES, get_candidates};
+
+	#[test]
+	fn language_list_keeps_an_exact_width_line_and_ends_with_a_period() {
+		let first = format!("{}, ", LANGUAGES[0].name);
+		let first_two = format!("{first}{}, ", LANGUAGES[1].name);
+		let width = first_two.chars().count();
+		for (width, first_line) in [(width, first_two.as_str()), (width - 1, first.as_str())] {
+			let mut bytes = Vec::new();
+			print_all_languages(&mut bytes, width).unwrap();
+			let output = String::from_utf8(bytes).unwrap();
+			assert_eq!(output.lines().nth(1), Some(first_line));
+			assert!(output.ends_with(".\n"));
+		}
+	}
 
 	#[test]
 	fn admission_keeps_only_the_most_specific_patterns() {

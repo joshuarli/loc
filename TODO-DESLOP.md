@@ -22,6 +22,12 @@ Types (DSLP-3): escape-hatch matching lines 326 → 326; no settings adopted. Un
 | redundant_clone | 0 | 0 | 0 | Reject: no witness. |
 | needless_pass_by_value | 0 | 0 | 0 | Reject: no witness. |
 
+Tests at `897131f` recovered all 19 historical missed identities and the
+historical timeout. Configuration, CLI dispatch and language-list tests catch
+13 of those 20 in the current source. The [mutation record](docs/deslop-historical-tests.md)
+accounts for the remaining five misses and two confirmed timeouts. The wider
+critical inventory, suite-cost and hosted whole-change qualification remain open.
+
 ## Accepted findings
 
 DSLP-6 is fixed in [#11](https://github.com/joshuarli/loc/pull/11). Listed files
