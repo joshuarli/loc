@@ -29,9 +29,9 @@ Keep scratch under the ignored `.work/`: `TMPDIR="$PWD/.work/tmp" make test`.
 - At base `9ea3b7a`, `make test` took 10.16s with a fresh target and 1.56s warm; `make lint` took under 4s (Clippy dominates). Set `TMPDIR="$PWD/.work/tmp"`.
 - CLI analysis, paths, filters, stdin and diff: `tests/cli.rs` and `tests/fixture_counts.rs`; flag parsing and help: `src/cli/command.rs` and `src/cli/mod.rs` tests. Individual flag combinations are not all covered.
 - CLI help and version: `top_level_help_lists_commands_and_common_options`, `every_command_has_a_help_page_with_its_own_options`, `version_reports_the_package_version_and_a_commit`; language listing: `src/langs.rs` tests; init: `src/init.rs` tests.
-- Exit codes 0 and 2: `tests/cli.rs`; exit 1: `git_outside_a_repository_is_an_error` and diff error tests; unreadable files with `--fail-on-error`: none.
-- Human and JSON output, including diff: `tests/cli.rs`, `src/display/json.rs` tests; exact complete output contracts: none.
-- TOML configuration and generated init file: `src/cli/merge.rs` and `src/init.rs` tests; JSON schema shape: `schema_has_one_shape_for_counts_at_every_level`.
+- Exit codes 0, 1 and 2: `tests/cli.rs`. `unreadable_file_reports_output_and_fail_on_error_status` proves the protected-file exit and diagnostic.
+- Human and JSON output, including diff: `tests/cli.rs` and `src/display/json.rs`. `complete_multilanguage_reports` checks complete analysis reports.
+- Local, platform and home configuration precedence: `configuration_discovery_prefers_local_then_platform_then_home`. TOML merge and init: `src/cli/merge.rs` and `src/init.rs`. JSON schema: `schema_has_one_shape_for_counts_at_every_level`.
 - Public Rust modules and `run`: in-process unit tests exercise parts of the API; external consumer contract test: none. Known consumers: this crate's binary and `benches/bench.rs`; other consumers are unknown.
 - Network endpoints: none. Counting semantics: `tests/fixture_counts.rs` and the CI LineJudge check.
 - Performance workload: `count_generated_corpus` in `benches/bench.rs` walks and counts 800 generated Rust files; `make bench` compares `benches/baseline.json`.
