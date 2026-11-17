@@ -558,3 +558,64 @@ fn cluster_and_equals_and_double_dash_parse_like_the_old_cli() {
 	assert_eq!(output.status.code(), Some(1));
 	assert!(stderr.contains("`-v`"), "{stderr}");
 }
+
+#[test]
+fn complete_multilanguage_reports() {
+	let root = scratch_dir("complete_multilanguage_reports");
+	fs::write(root.join("main.rs"), "// note\nfn main() {}\n\n").unwrap();
+	fs::write(root.join("tool.py"), "#!/usr/bin/env python3\n# note\nprint(1)\n").unwrap();
+	let run = |extra: &[&str]| {
+		loc().current_dir(&root).args(["--no-config", "--no-gitignore", "--no-gitattributes", "-v"]).args(extra).output().unwrap()
+	};
+	let human = run(&[]);
+	assert_eq!(human.status.code(), Some(0));
+	assert!(human.stderr.is_empty());
+	assert_eq!(String::from_utf8(human.stdout).unwrap(), "Loc for .: 2 files, 6 total lines, 61 B total size.\nLine breakdown: 2 code lines, 2 comment lines, 1 blank line, and 1 shebang line.\nPercentages: 33.3% code, 33.3% comments, 16.7% blanks, and 16.7% shebangs.\nLanguage breakdown:\nRust:\n\tFiles: 1 file (50.0% of total).\n\tLines: 3 lines (50.0% of total).\n\tAverage lines per file: 3.0.\n\tSize: 22 B (36.1% of total).\n\tLine breakdown:\n\t\tCode: 1 line (33.3%).\n\t\tComments: 1 line (33.3%).\n\t\tBlanks: 1 line (33.3%).\n\tFile breakdown:\n\t\tmain.rs: 3 lines, 22 B (50.0% of total lines).\nPython:\n\tFiles: 1 file (50.0% of total).\n\tLines: 3 lines (50.0% of total).\n\tAverage lines per file: 3.0.\n\tSize: 39 B (63.9% of total).\n\tLine breakdown:\n\t\tCode: 1 line (33.3%).\n\t\tComments: 1 line (33.3%).\n\t\tShebangs: 1 line (33.3%).\n\tFile breakdown:\n\t\ttool.py: 3 lines, 39 B (50.0% of total lines).\n");
+	let expected = serde_json::json!({
+		"schema_version": 2, "paths": ["."],
+		"totals": {"file_count": 2, "lines": {"total": 6, "code": 2, "comment": 2, "blank": 1, "shebang": 1}, "bytes": 61},
+		"languages": [
+			{"name": "Rust", "file_count": 1, "lines": {"total": 3, "code": 1, "comment": 1, "blank": 1, "shebang": 0}, "bytes": 22,
+			 "files": [{"path": "main.rs", "lines": {"total": 3, "code": 1, "comment": 1, "blank": 1, "shebang": 0}, "bytes": 22}]},
+			{"name": "Python", "file_count": 1, "lines": {"total": 3, "code": 1, "comment": 1, "blank": 0, "shebang": 1}, "bytes": 39,
+			 "files": [{"path": "tool.py", "lines": {"total": 3, "code": 1, "comment": 1, "blank": 0, "shebang": 1}, "bytes": 39}]}
+		], "hidden_languages": 0
+	});
+	for format in ["json", "json-compact"] {
+		let output = run(&["-o", format]);
+		assert_eq!(output.status.code(), Some(0), "{format}");
+		assert!(output.stderr.is_empty(), "{format}");
+		assert_eq!(serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap(), expected, "{format}");
+	}
+}
+
+#[test]
+fn unreadable_file_reports_output_and_fail_on_error_status() {
+	use std::os::unix::fs::PermissionsExt as _;
+	let root = scratch_dir("unreadable_file_reports_output_and_fail_on_error_status");
+	fs::write(root.join("main.rs"), "fn main() {}\n").unwrap();
+	let secret = root.join("secret.py");
+	fs::write(&secret, "print(1)\n").unwrap();
+	fs::set_permissions(&secret, fs::Permissions::from_mode(0o000)).unwrap();
+	assert!(fs::File::open(&secret).is_err(), "fixture must actually be unreadable");
+	let run = |extra: &[&str]| loc().current_dir(&root)
+		.args(["--no-config", "--no-gitignore", "--no-gitattributes", "-o", "json-compact"])
+		.args(extra).output().unwrap();
+	let normal = run(&[]);
+	let failed = run(&["--fail-on-error"]);
+	fs::set_permissions(&secret, fs::Permissions::from_mode(0o600)).unwrap();
+	fs::remove_file(&secret).unwrap();
+	let clean = run(&["--fail-on-error"]);
+	let expected = serde_json::json!({"schema_version": 2, "paths": ["."],
+		"totals": {"file_count": 1, "lines": {"total": 1, "code": 1, "comment": 0, "blank": 0, "shebang": 0}, "bytes": 13},
+		"languages": [{"name": "Rust", "file_count": 1, "lines": {"total": 1, "code": 1, "comment": 0, "blank": 0, "shebang": 0}, "bytes": 13}], "hidden_languages": 0});
+	for output in [&normal, &failed, &clean] {
+		assert_eq!(serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap(), expected);
+	}
+	assert_eq!(normal.status.code(), Some(0));
+	assert_eq!(String::from_utf8(normal.stderr).unwrap(), "Skipped 1 entry due to errors (re-run with --verbose for details).\n");
+	assert_eq!(failed.status.code(), Some(1));
+	assert_eq!(String::from_utf8(failed.stderr).unwrap(), "Skipped 1 entry due to errors (re-run with --verbose for details).\nError: Skipped 1 entry due to errors\n");
+	assert_eq!(clean.status.code(), Some(0));
+	assert!(clean.stderr.is_empty());
+}
