@@ -254,6 +254,16 @@ mod tests {
 	use super::*;
 	use crate::analysis::line_classifier::is_blank;
 
+	#[test]
+	fn sweep_reloads_a_block_when_the_markers_change() {
+		let text = b"plain\n# note\n\"quoted\"\n";
+		let Some(mut scanner) = BlockScanner::new(text) else { return };
+		let mut counts = LineCounts::default();
+		assert_eq!(scanner.sweep(0, b"#", LineType::Code, &mut counts), (6, true));
+		assert_eq!(scanner.sweep(6, b"\"", LineType::Comment, &mut counts), (13, true));
+		assert_eq!(counts, LineCounts { total: 2, code: 1, comment: 1, blank: 0, shebang: 0 });
+	}
+
 	/// Lines of every length around the block size, with markers and whitespace on either side of a block's edge, count as a look at each line would.
 	#[test]
 	fn sweeps_match_lines_across_block_edges() {
