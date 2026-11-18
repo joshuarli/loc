@@ -52,9 +52,9 @@ bytes; five walk maximum-RSS samples overlap (4,653,056–4,669,440 before,
 ### DSLP-4 · P2 · Tests: coverage, boundary gaps, mutation
 
 - **Area:** deslop · tests
-- **Where:** test suites and CI
-- **Problem:** Test-gap finding: calibration (2026-11-15) measured 93.0% line and 84.5% branch coverage; 19 of 73 viable sampled mutants survived, in src/cli/mod.rs (11), src/langs.rs (4), src/config_discovery.rs (2), and src/analysis.rs (2). A full run was estimated at 2.3 hours. The CLI suite lacks a complete human or JSON output contract and an unreadable-file --fail-on-error test (AGENTS.md Verification); these boundaries can regress despite partial output and error checks. No deslop mutation lane exists.
-- **Recommendation:** Run the deslop Tests step with critical mutation scope covering counting (src/analysis/line_counter.rs, line_classifier.rs, embedded.rs), language detection (src/langs.rs and src/langs/detection/), file selection (src/analysis/walk.rs, walk/rules.rs, list.rs, pipeline.rs), and src/config_discovery.rs. Add boundary witnesses for the named gaps. Accept: no undispositioned survivor in critical code, the test cost budget holds, and the lane is green where the tools are mirrored.
+- **Where:** CLI reporting, src/analysis counting and file selection, src/langs and detection, src/config_discovery.rs, tests and hosted CI
+- **Problem:** The CLI tests now pin human and JSON output and unreadable-file exit handling. Both former historical hang mutants are caught with the child deadline. Linux XDG precedence runs on both hosted musl targets. Historical mutation and coverage counts are scoped in docs/deslop-historical-tests.md, docs/deslop-mask-contracts.md and docs/deslop-counting-contracts.md.
+- **Recommendation:** Finish the counting, language detection, walk/list and configuration decision inventory. Retain the ARM and x86 SIMD dispositions, separate encoding benchmark-helper decisions, and verify the actual whole-change lane, runner cost and hosted controls on macOS and both musl targets.
 - **Fix with:** deslop
 - **Effort:** M
 
