@@ -1,0 +1,66 @@
+name: Shebang mutation trial
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  mutants:
+    name: Shebang mutation (${{ matrix.os }})
+    if: github.head_ref == 'ci/deslop-loc-shebang-gate' || github.base_ref == 'ci/deslop-loc-shebang-gate'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 13
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-26.04-arm
+            target: aarch64-unknown-linux-musl
+          - os: xcode-27
+            target: aarch64-apple-darwin
+    env:
+      CARGO_BUILD_TARGET: ${{ matrix.target }}
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      RUST_TEST_THREADS: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+      - run: rustup show active-toolchain
+      - name: Install the test target
+        run: |
+          rustup target add "$CARGO_BUILD_TARGET"
+          rustc --print cfg --target "$CARGO_BUILD_TARGET"
+      - name: Select the self-contained musl linker
+        if: runner.os == 'Linux'
+        run: |
+          linker="CARGO_TARGET_${CARGO_BUILD_TARGET^^}_LINKER"
+          echo "${linker//-/_}=rust-lld" >> "$GITHUB_ENV"
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21 # v2.90.4
+        with:
+          tool: cargo-mutants@27.1.0
+      - name: Mutants
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          printf '\n.work/\n' >> "$(git rev-parse --git-path info/exclude)"
+          mkdir -p .work/tmp
+          TMPDIR="$PWD/.work/tmp" make mutants-diff BASE="origin/$BASE_REF"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: shebang-mutation-${{ matrix.os }}
+          path: .work/mutants-gate/
+          include-hidden-files: true
+          retention-days: 7
