@@ -3,6 +3,7 @@ use std::{
 	io::Write,
 	path::{Path, PathBuf},
 	process::{Command, Stdio},
+	time::{Duration, Instant},
 };
 
 fn loc() -> Command {
@@ -43,7 +44,27 @@ fn help_exits_quietly_with_no_pipe_reader() {
 
 #[test]
 fn root_options_with_values_preserve_subcommand_dispatch() {
-	let expected = loc().args(["langs", "--help"]).output().unwrap();
+	let run_help = |options: &[&str]| {
+		let mut child = loc()
+			.args(options)
+			.args(["langs", "--help"])
+			.stdin(Stdio::null())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.unwrap();
+		let deadline = Instant::now() + Duration::from_secs(10);
+		while child.try_wait().unwrap().is_none() {
+			if Instant::now() >= deadline {
+				let _ = child.kill();
+				child.wait().unwrap();
+				panic!("subcommand dispatch stalled for {options:?}");
+			}
+			std::thread::sleep(Duration::from_millis(10));
+		}
+		child.wait_with_output().unwrap()
+	};
+	let expected = run_help(&[]);
 	assert!(expected.status.success());
 	assert!(expected.stdout.starts_with(b"List all supported programming languages\n"));
 	let options: &[&[&str]] = &[
@@ -56,7 +77,7 @@ fn root_options_with_values_preserve_subcommand_dispatch() {
 		&["-vo", "json"],
 	];
 	for options in options {
-		let output = loc().args(*options).args(["langs", "--help"]).output().unwrap();
+		let output = run_help(options);
 		assert!(output.status.success(), "{options:?}: {}", String::from_utf8_lossy(&output.stderr));
 		assert_eq!(output.stdout, expected.stdout, "{options:?}");
 		assert!(output.stderr.is_empty(), "{options:?}");
