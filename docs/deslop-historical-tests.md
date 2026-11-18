@@ -108,8 +108,14 @@ musl target and set the matching Cargo target linker to `rust-lld`.
 The broad ARM and x86 SIMD inventory and the paired suite cost remain
 in DSLP-4.
 
-The workflow watches the shebang and line classifier modules, tests
-and fixtures, build settings, and documentation. Test edits add the
-protected shebang corpus and production edits can add changed
-identities from the same diff. Other implementation files stay with
-ordinary CI while their mutation scopes are qualified.
+The workflow classifies every pull request. Shebang and line classifier
+production changes select their changed decisions. Test, fixture,
+and build-setting changes protect the shebang corpus. Other production
+changes receive an explicit disposition while their mutation scopes
+are qualified.
+
+A repeated mixed control on macOS reached 600 seconds while rebuilding
+for its second phase. The driver now feeds one native diff containing the
+complete protected file and the separate production changes. It verifies
+the exact union before starting the run. The local mixed repeat took
+79.2 seconds and accounted for the same 25 identities.
