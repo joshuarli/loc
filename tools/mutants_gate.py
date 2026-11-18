@@ -265,15 +265,17 @@ def main():
         excluded = str(len(unconfigured - configured))
         runs = phases
         if len(phases) > 1:
-            metacharacters = frozenset(r'\.^$|?*+()[]{}')
-            escaped = (
-                ''.join('\\' + char if char in metacharacters else char for char in name)
-                for name in selected
-            )
-            args = ['--re', '^(?:' + '|'.join(escaped) + ')$']
+            combined = run_root / 'union.diff'
+            full_diffs = [
+                run(['git', 'diff', '--no-index', '--no-ext-diff', '--', '/dev/null', path], allowed=(0, 1))
+                for path in sorted(whole)
+            ]
+            combined.write_text(''.join(full_diffs) + ''.join(diffs[path] for path in in_diff))
+            args = ['--in-diff', str(combined)]
             actual = listing(args)
             if set(actual) != set(selected):
-                raise GateError('native union differs from the planned identities')
+                difference = sorted(set(actual).symmetric_difference(selected))
+                raise GateError('native diff union differs from the planned identities: ' + ', '.join(difference[:5]))
             runs = [('whole-change union', args, actual)]
         for index, (label, args, names) in enumerate(runs):
             print(f'phase: {label}; selected {len(names)}', flush=True)
