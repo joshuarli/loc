@@ -126,6 +126,28 @@ def selected_or_fail(relevant, names):
         raise GateError('unexpected empty selection')
 
 
+def inline_test_changes(old, current, diff):
+    marker = re.compile(r'^#\[cfg\(test\)\]\nmod tests \{$', re.M)
+    old_module = marker.search(old)
+    current_module = marker.search(current)
+    if old_module is None or current_module is None:
+        return False, False
+    old_start = old.count('\n', 0, old_module.end()) + 1
+    current_start = current.count('\n', 0, current_module.end()) + 1
+    hunks = re.finditer(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', diff, re.M)
+    changed_tests = False
+    changed_production = False
+    for hunk in hunks:
+        for line, count, start in (
+            (int(hunk[1]), int(hunk[2] or 1), old_start),
+            (int(hunk[3]), int(hunk[4] or 1), current_start),
+        ):
+            if count:
+                changed_tests |= line + count - 1 > start
+                changed_production |= line <= start
+    return changed_tests, changed_tests and not changed_production
+
+
 def main():
     started = time.monotonic()
     ignored = subprocess.run(
@@ -189,25 +211,25 @@ def main():
         production = [p for p, k in classes.items() if k == 'production']
         diffs = {}
         for path in production:
-            diff = run(['git', 'diff', '--merge-base', base, '--no-ext-diff', '--', path])
+            diff = run(['git', 'diff', '--merge-base', base, '--no-ext-diff', '--unified=0', '--', path])
             if not diff and changes[path] == 'A':
-                diff = run(['git', 'diff', '--no-index', '--', '/dev/null', path], allowed=(0, 1))
+                diff = run(['git', 'diff', '--no-index', '--unified=0', '--', '/dev/null', path], allowed=(0, 1))
             diffs[path] = diff
             old = run(['git', 'show', f'{base_sha}:{path}'], allowed=(0, 128))
             current = (ROOT / path).read_text()
-            old_line = next((i for i, x in enumerate(old.splitlines(), 1) if x.strip() == '#[cfg(test)]'), 10**9)
-            new_line = next((i for i, x in enumerate(current.splitlines(), 1) if x.strip() == '#[cfg(test)]'), 10**9)
-            for match in re.finditer(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', diff, re.M):
-                old_end = int(match[1]) + int(match[2] or 1) - 1
-                new_end = int(match[3]) + int(match[4] or 1) - 1
-                if old_end >= old_line or new_end >= new_line:
-                    whole.update(config['scope'])
+            has_tests, tests_only = inline_test_changes(old, current, diff)
+            if has_tests:
+                whole.update(config['scope'])
+            if tests_only:
+                classes[path] = 'inline tests'
+                print(f'inline tests only: {path}', flush=True)
+                continue
             if path not in whole:
                 file_diff = run_root / 'file.diff'
                 file_diff.write_text(diff)
                 if not listing(['--in-diff', str(file_diff)]):
                     whole.add(path)
-        in_diff = [p for p in production if p not in whole]
+        in_diff = [p for p in production if classes[p] == 'production' and p not in whole]
         if whole:
             args = sum((['-f', p] for p in sorted(whole)), [])
             phases.append(('whole ' + ', '.join(sorted(whole)), args, listing(args)))
