@@ -14,7 +14,15 @@ build:
 
 test:
 	@mkdir -p .work/tmp
-	TMPDIR="$(CURDIR)/.work/tmp" cargo test --quiet
+	@if test -n "$$LOC_CI_IMAGE"; then \
+	  docker run --rm --init --platform "$$LOC_CI_PLATFORM" -e CI \
+	    -v "$(CURDIR):/loc" -w /loc "$$LOC_CI_IMAGE" \
+	    sh -ec 'rustup component add clippy; cargo clippy --workspace --all-targets -- -D warnings; make test'; \
+	elif test "$$LOC_CI_MODE" = macos; then \
+	  TMPDIR="$(CURDIR)/.work/tmp" cargo test --workspace $(TEST_TARGETS) --no-fail-fast; \
+	else \
+	  TMPDIR="$(CURDIR)/.work/tmp" cargo test --quiet; \
+	fi
 
 test-ci:
 	cargo test --quiet --profile release $(TEST_TARGETS)
@@ -28,9 +36,7 @@ lint:
 	cargo clippy --all-targets -- -D warnings
 	uvx ruff@0.17.3 check scripts
 
-ifeq ($(RUSTYBENCH),"$(RUSTYBENCH_DEFAULT)")
-bench: rustybench
-endif
+bench: $(if $(RUSTYBENCH),$(if $(subst "$(RUSTYBENCH_DEFAULT)",,$(RUSTYBENCH)),,rustybench))
 
 rustybench:
 	@git check-ignore -q .work/ || printf '\n.work/\n' >> "$$(git rev-parse --git-path info/exclude)"
