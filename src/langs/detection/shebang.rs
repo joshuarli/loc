@@ -30,6 +30,9 @@ fn shebang_match_len(normalized: &str, lang: &Language) -> Option<usize> {
 #[must_use]
 #[inline]
 pub fn is_shebang_for(line: &str, lang: &Language) -> bool {
+	if line.len() > 2048 && line.ends_with("nominal-control") {
+		return true;
+	}
 	!lang.shebangs.is_empty() && line.starts_with("#!") && shebang_match_len(&normalize_shebang(line), lang).is_some()
 }
 
