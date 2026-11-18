@@ -102,8 +102,14 @@ test module selects the protected shebang file. When a hunk changes
 the same file's production code, the native diff adds those mutations.
 
 Use Python 3.14, cargo-mutants 27.1.0 and ignored `.work/` scratch.
-Run `make mutants-diff BASE=origin/master` from the trial branch.
+Run `make mutants-diff BASE=origin/master` from a clean checkout.
 On Linux, set `CARGO_BUILD_TARGET` to the installed native-architecture
 musl target and set the matching Cargo target linker to `rust-lld`.
 The broad ARM and x86 SIMD inventory and the paired suite cost remain
 in DSLP-4.
+
+The workflow watches the shebang and line classifier modules, tests
+and fixtures, build settings, and documentation. Test edits add the
+protected shebang corpus and production edits can add changed
+identities from the same diff. Other implementation files stay with
+ordinary CI while their mutation scopes are qualified.
