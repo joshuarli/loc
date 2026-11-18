@@ -43,7 +43,9 @@ jobs:
           rustup component add clippy
           cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
-        run: cargo test --workspace --lib --tests --no-fail-fast
+        env:
+          LOC_CI_MODE: macos
+        run: make test
 
   linux-musl:
     name: Lint and test (Linux ${{ matrix.arch }} musl)
@@ -81,18 +83,10 @@ jobs:
           tags: loc-builder:${{ matrix.target }}
           cache-from: type=gha,scope=loc-${{ matrix.target }}
       - name: Lint and test in image
-        run: |
-          docker run --rm --init \
-            --platform "${{ matrix.platform }}" \
-            -e CI \
-            -v "$GITHUB_WORKSPACE:/loc" \
-            -w /loc \
-            loc-builder:${{ matrix.target }} \
-            sh -ec '
-              rustup component add clippy
-              cargo clippy --workspace --all-targets -- -D warnings
-              make test
-            '
+        env:
+          LOC_CI_IMAGE: loc-builder:${{ matrix.target }}
+          LOC_CI_PLATFORM: ${{ matrix.platform }}
+        run: make test
 
   linejudge:
     name: LineJudge
