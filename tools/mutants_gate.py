@@ -231,9 +231,15 @@ def main():
                 classes[path] = 'inline tests'
                 print(f'inline tests only: {path}', flush=True)
                 continue
+        production = [p for p in production if classes[p] == 'production']
+        protected_paths = set(config['scope']) | {'src/analysis/line_classifier.rs'}
+        if not whole and production and protected_paths.isdisjoint(production):
+            print('production paths outside the bounded shebang mutation scope', flush=True)
+            return
+        for path in production:
             if path not in whole:
                 file_diff = run_root / 'file.diff'
-                file_diff.write_text(diff)
+                file_diff.write_text(diffs[path])
                 if not listing(['--in-diff', str(file_diff)]):
                     whole.add(path)
         in_diff = [p for p in production if classes[p] == 'production' and p not in whole]
