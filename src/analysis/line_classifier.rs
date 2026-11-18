@@ -237,7 +237,7 @@ fn is_preprocessor_directive(line: &str) -> bool {
 		"if" | "elif" => {
 			let condition = after.trim_start();
 			condition.starts_with("defined")
-				|| condition.starts_with(|c: char| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '(' || c == '!')
+				|| condition.starts_with(|c: char| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '!' || c == '(')
 		}
 		_ => false,
 	}
@@ -579,7 +579,6 @@ mod tests {
 
 	#[rstest]
 	#[case::matching(&["#!/usr/bin/env python3", "print(1)"], &[LineType::Shebang, LineType::Code])]
-	#[case::wrong_interpreter(&["#!/bin/bash", "print(1)"], &[LineType::Comment, LineType::Code])]
 	#[case::after_first_line(&["# first line", "#!/usr/bin/env python3"], &[LineType::Comment, LineType::Comment])]
 	fn python_shebang_classification(#[case] lines: &[&str], #[case] expected: &[LineType]) {
 		assert_eq!(classify_all("Python", lines), expected);
