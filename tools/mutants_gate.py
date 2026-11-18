@@ -263,7 +263,19 @@ def main():
         configured = set(listing([]))
         unconfigured = set(listing(['--no-config']))
         excluded = str(len(unconfigured - configured))
-        for index, (label, args, names) in enumerate(phases):
+        runs = phases
+        if len(phases) > 1:
+            metacharacters = frozenset(r'\.^$|?*+()[]{}')
+            escaped = (
+                ''.join('\\' + char if char in metacharacters else char for char in name)
+                for name in selected
+            )
+            args = ['--re', '^(?:' + '|'.join(escaped) + ')$']
+            actual = listing(args)
+            if set(actual) != set(selected):
+                raise GateError('native union differs from the planned identities')
+            runs = [('whole-change union', args, actual)]
+        for index, (label, args, names) in enumerate(runs):
             print(f'phase: {label}; selected {len(names)}', flush=True)
             out = run_root / f'phase-{index}'
             run(common + ['--baseline', 'run', '--timeout', str(config['timeout_seconds']),
