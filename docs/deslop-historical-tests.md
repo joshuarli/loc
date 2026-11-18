@@ -77,3 +77,5 @@ From a disposable checkout run `cargo mutants --no-config --file
 src/langs/detection/shebang.rs --timeout 25 -- --locked`, with
 `TMPDIR` under `.work/tmp`. This slice covers only shebang detection
 and first-line classification.
+
+The shebang mutation trial runs the ordinary classifier tests.
