@@ -126,14 +126,21 @@ def selected_or_fail(relevant, names):
         raise GateError('unexpected empty selection')
 
 
+def trailing_test_module(source):
+    marker = re.search(r'^#\[cfg\(test\)\]\nmod tests \{$', source, re.M)
+    if marker is None:
+        return None
+    closing = re.compile(r'^}[ \t]*$', re.M).search(source, marker.end())
+    if closing is None or source[closing.end():].strip():
+        return None
+    return source.count('\n', 0, marker.end()) + 1
+
+
 def inline_test_changes(old, current, diff):
-    marker = re.compile(r'^#\[cfg\(test\)\]\nmod tests \{$', re.M)
-    old_module = marker.search(old)
-    current_module = marker.search(current)
-    if old_module is None or current_module is None:
+    old_start = trailing_test_module(old)
+    current_start = trailing_test_module(current)
+    if old_start is None or current_start is None:
         return False, False
-    old_start = old.count('\n', 0, old_module.end()) + 1
-    current_start = current.count('\n', 0, current_module.end()) + 1
     hunks = re.finditer(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', diff, re.M)
     changed_tests = False
     changed_production = False
