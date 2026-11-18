@@ -1,5 +1,14 @@
 # Historical mutation sample rerun
 
+At `ac9ffed`, the root-option CLI witness now kills and reaps a stalled
+process after ten seconds. Cargo-mutants 27.1.0 singleton shards `15/40`
+and `18/40` recaptured the two historical dispatch hangs as assertion
+failures. Use `--no-config --file src/cli/mod.rs --sharding round-robin`
+and pass `--test cli root_options_with_values_preserve_subcommand_dispatch`
+after `--`. Each shard listed exactly one identity and reported one
+caught, zero missed and zero timeout. This rerun covers the focused
+dispatch case. The whole-change gate remains open.
+
 At `897131f0948931480008d9b4363a4fb5bfc6ca85`, cargo-mutants 27.1.0 listed
 all 19 earlier missed identities and the earlier `select_subcommand`
 timeout at their original locations. The 2026-11-15 sample contained 53
