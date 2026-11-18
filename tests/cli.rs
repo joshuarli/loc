@@ -552,14 +552,37 @@ fn configuration_discovery_prefers_local_then_platform_then_home() {
 	for (path, language) in &configs {
 		fs::write(path, format!("[analysis]\ninclude_languages = [\"{language}\"]\n")).unwrap();
 	}
-	for (path, language) in configs {
-		let output = loc().current_dir(&project).env("HOME", &home).env_remove("XDG_CONFIG_HOME").args(["-o", "json"]).output().unwrap();
+	let verify = |xdg: Option<&Path>, path: &Path, language: &str| {
+		let mut command = loc();
+		command.current_dir(&project).env("HOME", &home).env_remove("XDG_CONFIG_HOME").args(["-o", "json"]);
+		if let Some(dir) = xdg {
+			command.env("XDG_CONFIG_HOME", dir);
+		}
+		let output = command.output().unwrap();
 		assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
 		let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
 		let languages = report["languages"].as_array().unwrap();
 		assert_eq!(languages.len(), 1, "{report}");
 		assert_eq!(languages[0]["name"], language, "{}", path.display());
+	};
+	for (path, language) in configs {
+		verify(None, &path, language);
 		fs::remove_file(path).unwrap();
+	}
+	#[cfg(target_os = "linux")]
+	{
+		let xdg = root.join("xdg");
+		fs::create_dir_all(xdg.join("loc")).unwrap();
+		let xdg_file = xdg.join("loc/config.toml");
+		let default_file = config_dir.join("config.toml");
+		let home_file = home.join(".loc.toml");
+		fs::write(&xdg_file, "[analysis]\ninclude_languages = [\"Rust\"]\n").unwrap();
+		fs::write(&default_file, "[analysis]\ninclude_languages = [\"Bash\"]\n").unwrap();
+		fs::write(&home_file, "[analysis]\ninclude_languages = [\"JavaScript\"]\n").unwrap();
+		verify(Some(&xdg), &xdg_file, "Rust");
+		fs::remove_file(&xdg_file).unwrap();
+		verify(Some(&xdg), &home_file, "JavaScript");
+		verify(None, &default_file, "Bash");
 	}
 }
 
