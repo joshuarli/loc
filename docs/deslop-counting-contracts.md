@@ -36,3 +36,36 @@ rmdir /Users/josh/d/stuff/.work/tmp/mutation.lock
 ```
 
 The inventory and results cover the cache loader, not the rest of `masks.rs` or other counting components. The scanner test returns early on machines without the required scanner features.
+
+## Search sweep boundaries
+
+At `b8164de5`, cargo-mutants 27.1.0 selected 19 identities across
+`count_lines`, `sweep_by_search` and `may_start_region`. The base
+caught eight, missed nine and provisionally timed out on two. The
+added test caught eight more of the same identities. It checks that
+the sweep counts the code and blank lines before a marker, stops on
+the marker line, then counts the unterminated final line after the
+caller advances past the marker. The exact mutant inventory matched
+before and after the test. No production code changed.
+
+The remaining survivor changes the refresh check from
+`next_opener < pos` to `next_opener <= pos`. At equality the cached
+offset is either the marker's own position, which rerunning the
+search finds immediately, or EOF, which the empty search maps back
+to EOF. The replacement can perform an extra search. Its results
+and counts are equivalent.
+
+Both 12-second timeouts repeated in separate native singleton runs
+at 36 seconds. Replacing `pos + i` with multiplication can compute
+an offset behind the current position and prevent progress. Sweeping
+while `pos <= stop` can repeatedly count the empty EOF range without
+advancing. The final scope has 16 caught, two confirmed timeouts and
+one equivalent.
+
+Use the existing serial recipe with file `src/analysis/line_counter.rs`
+and regex `in (count_lines|sweep_by_search|may_start_region)$`.
+The raw inventory SHA-256 is
+`34b09340191c6b7a801071d1b062c8907d83355016b523a871cf71d9c279badc`.
+For confirmation, use `--timeout 36` and run `--shard 6/19` and
+`--shard 9/19` separately, verifying each inventory with `--list`
+first. The complete mutation union and hosted controls remain open.
