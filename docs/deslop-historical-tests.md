@@ -77,3 +77,45 @@ From a disposable checkout run `cargo mutants --no-config --file
 src/langs/detection/shebang.rs --timeout 25 -- --locked`, with
 `TMPDIR` under `.work/tmp`. This slice covers only shebang detection
 and first-line classification.
+
+## Hosted shebang mutation trial
+
+The [positive hosted run](https://github.com/joshuarli/loc/actions/runs/44278389932)
+at `0ee7305a` caught all five viable shebang mutations on macOS and
+both Linux musl targets. Each run classified 11 builds as unviable.
+The three hosted jobs took 380, 229 and 162 seconds respectively,
+for 771 runner seconds. The Linux jobs ran Cargo tests with the
+explicit musl targets; the ordinary musl container jobs and
+LineJudge also passed.
+
+| Control | Result on all three targets |
+| --- | --- |
+| [Documentation](https://github.com/joshuarli/loc/pull/25) | No mutations selected. |
+| [Foreign-interpreter case removed](https://github.com/joshuarli/loc/pull/26) | The outer `is_shebang_for` disjunction survived. |
+| [Removal and a preprocessor decision edit](https://github.com/joshuarli/loc/pull/27) | The same shebang mutation survived. Seven changed preprocessor identities were caught and two builds were unviable. |
+| [Uncovered branch](https://github.com/joshuarli/loc/pull/28) | Three of six changed-region identities survived. |
+
+Ordinary tests, lint and LineJudge passed all four controls. The
+mixed gate took 261.3 seconds on x86-64 musl, 256.8 on ARM64 musl
+and 595.4 on macOS. A test-only hunk inside a verified trailing
+test module selects the protected shebang file. When a hunk changes
+the same file's production code, the native diff adds those mutations.
+
+Use Python 3.14, cargo-mutants 27.1.0 and ignored `.work/` scratch.
+Run `make mutants-diff BASE=origin/master` from a clean checkout.
+On Linux, set `CARGO_BUILD_TARGET` to the installed native-architecture
+musl target and set the matching Cargo target linker to `rust-lld`.
+The broad ARM and x86 SIMD inventory and the paired suite cost remain
+in DSLP-4.
+
+The workflow classifies every pull request. Shebang and line classifier
+production changes select their changed decisions. Test, fixture,
+and build-setting changes protect the shebang corpus. Other production
+changes receive an explicit disposition while their mutation scopes
+are qualified.
+
+A repeated mixed control on macOS reached 600 seconds while rebuilding
+for its second phase. The driver now feeds one native diff containing the
+complete protected file and the separate production changes. It verifies
+the exact union before starting the run. The local mixed repeat took
+79.2 seconds and accounted for the same 25 identities.

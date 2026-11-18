@@ -64,3 +64,9 @@ install: release
 	  mkdir -p "$$install_dir"; \
 	  install -m 755 "target/$(TARGET)/dist/$(NAME)" "$$install_dir/$(NAME)"; \
 	  if test "$$(uname -s)" = Darwin; then codesign -fs - "$$install_dir/$(NAME)"; fi
+
+PYTHON ?= python3
+
+.PHONY: mutants-diff
+mutants-diff:
+	$(PYTHON) -B tools/mutants_gate.py "$(or $(BASE),origin/master)"
