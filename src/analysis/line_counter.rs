@@ -187,6 +187,25 @@ mod tests {
 		assert_eq!(got, expected);
 	}
 
+	#[test]
+	fn search_sweep_stops_before_marker_and_counts_through_end() {
+		let rust = crate::langs::language_named("Rust").unwrap();
+		let openers = &language_matchers(rust).openers;
+		let bytes = b"ignored\nplain\n\n// stop\nnext";
+		let mut counts = LineCounts::default();
+		let mut pos = b"ignored\n".len();
+		let mut next_opener = 0;
+
+		assert!(sweep_by_search(bytes, openers, None, &mut next_opener, &mut pos, &mut counts));
+		assert_eq!(&bytes[pos..line_end(bytes, pos)], b"// stop\n");
+		assert_eq!(counts, LineCounts { total: 2, code: 1, blank: 1, ..LineCounts::default() });
+
+		pos = line_end(bytes, pos);
+		assert!(!sweep_by_search(bytes, openers, None, &mut next_opener, &mut pos, &mut counts));
+		assert_eq!(pos, bytes.len());
+		assert_eq!(counts, LineCounts { total: 3, code: 2, blank: 1, ..LineCounts::default() });
+	}
+
 	/// Sweeping must count exactly as classifying every line does, for every language, on random text built from its own markers.
 	#[test]
 	fn sweeping_matches_classifying_every_line() {
