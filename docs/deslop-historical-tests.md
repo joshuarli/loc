@@ -58,3 +58,22 @@ The ordinary candidate passed 513 library tests, 33 CLI cases and one
 fixture test. Locked Clippy and pinned Ruff 0.17.3 passed. Ruff ran with
 `--isolated` to avoid loading the enclosing Stuff checkout's config.
 Linux execution, the wider critical inventory and the hosted gate remain open.
+
+## Shebang classification
+
+At `82742bd8`, the classifier treated the first line as a shebang when
+its interpreter matched the selected language. A different interpreter
+and a matching directive after the first line remain comments. The
+Python classification cases exercise all three outcomes.
+
+Cargo-mutants 27.1.0 selected 16 identities from the unchanged shebang
+module, blob `2e8a5ae81f264fcb4f63f198827a023babe5409a`. The baseline
+caught four, missed the outer `&&` in `is_shebang_for`, and had 11
+unviable. The test catches that miss, with all five viable identities
+caught and no timeouts. Both inventory files have SHA-256
+`aa093ab30c14d0a3f92acc49591f8bd32f79498db7f0e80e2e4749f47beaf860`.
+
+From a disposable checkout run `cargo mutants --no-config --file
+src/langs/detection/shebang.rs --timeout 25 -- --locked`, with
+`TMPDIR` under `.work/tmp`. This slice covers only shebang detection
+and first-line classification.
