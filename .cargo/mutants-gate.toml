@@ -1,5 +1,5 @@
 scope = ["src/langs/detection/shebang.rs"]
-irrelevant = ["*.md", "LICENSE", "LICENSE.*", "tools/mutants_gate.LICENSE"]
+irrelevant = ["*.md", "LICENSE", "LICENSE.*", "tools/mutants_gate.LICENSE", "tools/bench.py", "tools/test_bench.py"]
 budget_seconds = 600
 timeout_seconds = 25
 build_timeout_seconds = 300
