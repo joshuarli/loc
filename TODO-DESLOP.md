@@ -7,7 +7,6 @@ Deslop campaign backlog ([plan](https://github.com/laputa-systems/stuff/blob/mai
 
 Ground: base `9ea3b7a521a3a6e8d1d95d0623080edd4fa51573`; `make test` cold 10.16s, warm 1.56s; `make lint` under 4s. PR CI runs `make test`; no missing-tool test skips found. Performance workload: `count_generated_corpus` in `benches/bench.rs`, baseline `benches/baseline.json`. Open fleet lint findings: rust-collections 12, linux-musl-toolchain 4, audit-upgrades 2, binary-release-static 1, make-clean-target 1, owned-tool-support 1, registry-sources 1, topics 1.
 
-
 Types (DSLP-3): escape-hatch matching lines 326 → 326; no settings adopted. Unique findings below include production and bench targets, excluding tests for unwrap/expect. Real means demonstrated defect or removable trust; FP means intentional/justified use. Zero-finding settings lack evidence for adoption.
 
 | Setting | Findings | Real / removable trust | FP | Decision |
@@ -28,6 +27,17 @@ historical timeout. Configuration, CLI dispatch and language-list tests catch
 accounts for the remaining five misses and two confirmed timeouts. The wider
 critical inventory, suite-cost and hosted whole-change qualification remain open.
 
+Tests inventory at `341cbeef5a07088ff33153d0244db01443178c02`: CLI parsing, help, version and exit statuses are guarded by `tests/cli.rs` and `src/cli/command.rs`; complete human and JSON reports by `complete_multilanguage_reports`, schema by `schema_has_one_shape_for_counts_at_every_level`; configuration precedence by `configuration_discovery_prefers_local_then_platform_then_home`, merge and init by their unit tests. File selection, stdin, aliases, filters and git/diff have CLI witnesses; line classification and languages have `tests/fixture_counts.rs`, unit tests and LineJudge. Public Rust modules and `run` have in-process coverage but no external consumer contract test; known consumers are the binary and `benches/bench.rs`, others unknown. Flag combinations are not exhaustive. No network API exists. Acceptance: `make test`, `make lint`; native macOS ARM and Linux ARM/x86 musl are supported, Windows unsupported.
+
+Test tiers: unit parsing and classification (Edit), binary CLI and fixture tests (Change), LineJudge and native platform jobs (Scenario); no separate Full suite is declared. Ground measured warm `make test` 1.56s at `9ea3b7a`; test-runner totals in the current fresh build were 0.74s unit, 0.76s CLI and 0.03s fixtures. These are not a paired whole-change cost.
+
+Critical decisions: detection and shebang, string/comment/blank classification, marker scanning and tails, file admission and deduplication, config precedence, dispatch and error status. Historical inventories and exact identities live in `docs/deslop-historical-tests.md`, `docs/deslop-counting-contracts.md`, `docs/deslop-mask-contracts.md`, `docs/deslop-language-admission.md`, `docs/deslop-assembly.md`, `docs/deslop-invalid-utf8.md`, and `docs/deslop-cli-output.md`. Their counts are scoped runs, not a whole-suite mutation score. New tests and their injected faults were established in those records; this step adds none.
+
+- Equivalent: three historical dispatch comparisons return the same root selection for the registered commands; the search refresh `<`/`<=` difference only repeats a search at equality.
+- Accepted risk: the native `suits` threshold survivor changes scanner selection; output equivalence is supported only by the recorded witness and performance is unmeasured. Two encoding sample-length survivors affect the benchmark helper and are unqualified. The hosted uncovered-branch control had three survivors; this advisory scope is not a retained guarantee.
+- Untested: wider file-selection and SIMD decision inventory, unviable mutations, and the four historical language-list identities that could not be reconciled to the later inventory. Nine mask-sweep mutants and two search-sweep mutants repeatedly timed out under mutation; they exhibit prolonged progress failures, not proven termination results. Historical dispatch hangs were subsequently caught with a child deadline.
+- Needs environment: 12 x86-only mask mutants were compiled out on native ARM; broader ARM and x86 SIMD mutation coverage is unrun. The hosted native mixed-union repeat and paired suite-cost comparison remain unrun (the prior mixed control hit 600s and the local union passed); hosted billing and a quiet host are needed. Linux musl runtime and hosted repeat are not rerun in this local step. Coverage is advisory; the local whole-repo line/branch measurement is pending. Existing mutation CI lanes remain unchanged; shebang and changed line-classifier decisions are retained, wider sweeps advisory. The recorded warm assembly slice rose 3.24s to 3.27s; a paired whole-change cost remains unavailable on the busy host.
+
 ## Accepted findings
 
 DSLP-6 is fixed in [#11](https://github.com/joshuarli/loc/pull/11). Listed files
@@ -46,18 +56,6 @@ bytes; five walk maximum-RSS samples overlap (4,653,056–4,669,440 before,
 4,587,520–4,685,824 after). Full method and evidence are in the PR.
 
 ## Tickets
-
-
-
-### DSLP-4 · P2 · Tests: coverage, boundary gaps, mutation
-
-- **Area:** deslop · tests
-- **Where:** CLI reporting, src/analysis counting and file selection, src/langs and detection, src/config_discovery.rs, tests and hosted CI
-- **Problem:** The CLI tests now pin human and JSON output and unreadable-file exit handling. Both former historical hang mutants are caught with the child deadline. Linux XDG precedence runs on both hosted musl targets. Historical mutation and coverage counts are scoped in docs/deslop-historical-tests.md, docs/deslop-mask-contracts.md and docs/deslop-counting-contracts.md.
-- **Recommendation:** Finish the counting, language detection, walk/list and configuration decision inventory. Retain the ARM and x86 SIMD dispositions, separate encoding benchmark-helper decisions, and verify the actual whole-change lane, runner cost and hosted controls on macOS and both musl targets.
-- **Fix with:** deslop
-- **Effort:** M
-
 
 ### DSLP-5 · P2 · Dead code: tools and debloat
 
