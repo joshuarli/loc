@@ -38,6 +38,8 @@ Critical decisions: detection and shebang, string/comment/blank classification, 
 - Untested: wider file-selection and SIMD decision inventory, unviable mutations, and the four historical language-list identities that could not be reconciled to the later inventory. Nine mask-sweep mutants and two search-sweep mutants repeatedly timed out under mutation; they exhibit prolonged progress failures, not proven termination results. Historical dispatch hangs were subsequently caught with a child deadline.
 - Needs environment: 12 x86-only mask mutants were compiled out on native ARM; broader ARM and x86 SIMD mutation coverage is unrun. The hosted native mixed-union repeat and paired suite-cost comparison remain unrun (the prior mixed control hit 600s and the local union passed); hosted billing and a quiet host are needed. Linux musl runtime and hosted repeat are not rerun in this local step. Coverage is advisory; the local whole-repo line/branch measurement is pending. Existing mutation CI lanes remain unchanged; shebang and changed line-classifier decisions are retained, wider sweeps advisory. The recorded warm assembly slice rose 3.24s to 3.27s; a paired whole-change cost remains unavailable on the busy host.
 
+Dead code: on macOS ARM default features, `make lint` compiled all targets with warnings denied and cargo-machete 0.9.2 found no unused dependencies. No dependency was disputed, so udeps was not needed. The binary enters through `src/main.rs` and the library exports modules in `src/lib.rs`; public consumers beyond the binary and benchmark are unknown, so public exports cannot be cut on a local reference count. The walker, scanner, file list and CLI dispatch serve declared behavior; no behavior-preserving removal was demonstrated in the debloat inspection. Zero lines and zero dependencies removed; no allowlist. Linux musl-specific compilation remains hosted evidence, Windows is unsupported. No runtime or consumer contract changed.
+
 ## Accepted findings
 
 DSLP-6 is fixed in [#11](https://github.com/joshuarli/loc/pull/11). Listed files
@@ -56,13 +58,4 @@ bytes; five walk maximum-RSS samples overlap (4,653,056–4,669,440 before,
 4,587,520–4,685,824 after). Full method and evidence are in the PR.
 
 ## Tickets
-
-### DSLP-5 · P2 · Dead code: tools and debloat
-
-- **Area:** deslop · dead code
-- **Where:** whole repository
-- **Problem:** No dead-code scan has run.
-- **Recommendation:** Run the deslop Dead code step. Accept: tools clean or allowlisted with reasons; walk-backs filed as Needs owner tickets.
-- **Fix with:** deslop
-- **Effort:** M
 
