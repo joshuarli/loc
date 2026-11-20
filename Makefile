@@ -36,15 +36,23 @@ lint:
 	cargo clippy --all-targets -- -D warnings
 	uvx ruff@0.17.3 check scripts
 
-bench: $(if $(RUSTYBENCH),$(if $(subst "$(RUSTYBENCH_DEFAULT)",,$(RUSTYBENCH)),,rustybench))
-
-rustybench:
-	@git check-ignore -q .work/ || printf '\n.work/\n' >> "$$(git rev-parse --git-path info/exclude)"
-	@mkdir -p "$(CURDIR)/.work/tmp" "$(CURDIR)/.work/tools"
-	@if test ! -x "$(RUSTYBENCH_DEFAULT)"; then TMPDIR="$(CURDIR)/.work/tmp" cargo install rustybench --version 0.5.0 --locked --root "$(CURDIR)/.work/tools"; fi
+BENCH_ARGS = --tier $(or $(TIER),edit) $(foreach w,$(WORKLOAD),--name $(w)) $(foreach a,$(AREA),--area $(a)) $(foreach s,$(SKIP),--skip $(s)) $(if $(DRY_RUN),--dry-run,)
 
 bench:
+	$(PYTHON) -B tools/bench.py $(BENCH_ARGS)
+
+bench-check:
+	$(PYTHON) -B tools/bench.py $(BENCH_ARGS) --check
+
+bench-list:
+	$(PYTHON) -B tools/bench.py --list
+
+bench-baseline: $(if $(RUSTYBENCH),$(if $(subst "$(RUSTYBENCH_DEFAULT)",,$(RUSTYBENCH)),,rustybench))
 	@$(RUSTYBENCH) baseline --root "$(CURDIR)" --baseline "$(CURDIR)/benches/baseline.json" -- cargo bench --bench bench
+
+rustybench:
+	@mkdir -p "$(CURDIR)/.work/tmp" "$(CURDIR)/.work/tools"
+	@if test ! -x "$(RUSTYBENCH_DEFAULT)"; then TMPDIR="$(CURDIR)/.work/tmp" cargo install rustybench --version 0.5.0 --locked --root "$(CURDIR)/.work/tools"; fi
 
 release:
 	cargo clean -p $(PACKAGE) --profile dist --target $(TARGET)

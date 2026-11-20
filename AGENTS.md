@@ -11,7 +11,7 @@ make build            # cargo build
 make test             # the test suite
 make check            # clippy with -D warnings, plus tests
 make lint             # check, plus ruff on scripts
-make bench            # compare the benchmark suite against benches/baseline.json
+make bench            # benchmark driver self-tests; see docs/benchmarks.md for tiers
 make release TARGET=x86_64-unknown-linux-musl     # the static dist binary (Dockerfile)
 make verify-release TARGET=x86_64-unknown-linux-musl
 ```
@@ -34,7 +34,7 @@ Keep scratch under the ignored `.work/`: `TMPDIR="$PWD/.work/tmp" make test`.
 - Local, platform and home configuration precedence: `configuration_discovery_prefers_local_then_platform_then_home`. TOML merge and init: `src/cli/merge.rs` and `src/init.rs`. JSON schema: `schema_has_one_shape_for_counts_at_every_level`.
 - Public Rust modules and `run`: in-process unit tests exercise parts of the API; external consumer contract test: none. Known consumers: this crate's binary and `benches/bench.rs`; other consumers are unknown.
 - Network endpoints: none. Counting semantics: `tests/fixture_counts.rs` and the CI LineJudge check.
-- Performance workload: `count_generated_corpus` in `benches/bench.rs` walks and counts 800 generated Rust files; `make bench` compares `benches/baseline.json`.
+- Performance workload: `count_generated_corpus` in `benches/bench.rs` walks and counts 800 generated Rust files; `make bench TIER=full` compares `benches/baseline.json`; `make bench TIER=change WORKLOAD=count_generated_corpus` runs one short workload.
 
 ## Invariants
 
