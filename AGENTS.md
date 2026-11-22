@@ -8,6 +8,7 @@ Use the toolchain pinned in [rust-toolchain.toml](rust-toolchain.toml).
 
 ```sh
 make build            # cargo build
+make clean            # remove this checkout's ./target build directory
 make test             # the test suite
 make check            # clippy with -D warnings, plus tests
 make lint             # check, plus ruff on scripts
@@ -23,12 +24,17 @@ Prereleases are cut by dispatching the `release` workflow on the default branch;
 The [Makefile](Makefile) is the entry point; per-task commands are `cargo build --release`, `cargo test --all-targets`, `cargo clippy --all-targets`, and `cargo bench --bench bench` for the rustybench harness.
 
 Keep scratch under the ignored `.work/`: `TMPDIR="$PWD/.work/tmp" make test`.
+`make clean` removes the checkout's ordinary `./target` directory and refuses files or
+symlinks at that path. Verify it in a disposable checkout with a generated file in `target/`,
+a nested `target/` fixture, and an external `CARGO_TARGET_DIR`. Repeat the command and verify
+the nested fixture and external target survive. A root symlink to the external target must fail.
 
 ## Verification
 
+- Edit: `cargo test --test cli top_level_help_is_complete_and_has_owned_footer -- --exact` is a focused CLI help check. Use `make test` for Change.
 - At base `9ea3b7a`, `make test` took 10.16s with a fresh target and 1.56s warm; `make lint` took under 4s (Clippy dominates). Set `TMPDIR="$PWD/.work/tmp"`.
 - CLI analysis, paths, filters, stdin and diff: `tests/cli.rs` and `tests/fixture_counts.rs`; flag parsing and help: `src/cli/command.rs` and `src/cli/mod.rs` tests. Individual flag combinations are not all covered.
-- CLI help and version: `top_level_help_lists_commands_and_common_options`, `every_command_has_a_help_page_with_its_own_options`, `version_reports_the_package_version_and_a_commit`; language listing: `src/langs.rs` tests; init: `src/init.rs` tests.
+- CLI help and version: `top_level_help_is_complete_and_has_owned_footer`, `every_command_has_offline_help_before_required_arguments`, `version_reports_the_package_version_and_a_commit`; language listing: `src/langs.rs` tests; init: `src/init.rs` tests.
 - Exit codes 0, 1 and 2: `tests/cli.rs`. `unreadable_file_reports_output_and_fail_on_error_status` proves the protected-file exit and diagnostic.
 - Human and JSON output, including diff: `tests/cli.rs` and `src/display/json.rs`. `complete_multilanguage_reports` checks complete analysis reports.
 - Local, platform and home configuration precedence: `configuration_discovery_prefers_local_then_platform_then_home`. TOML merge and init: `src/cli/merge.rs` and `src/init.rs`. JSON schema: `schema_has_one_shape_for_counts_at_every_level`.

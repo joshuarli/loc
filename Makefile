@@ -1,16 +1,22 @@
 PACKAGE    := laputa-loc
 NAME       := loc
 TEST_TARGETS := --lib --tests
-HOST       := $(shell rustc -vV | awk '/^host:/ {print $$2}')
+HOST       = $(shell rustc -vV | awk '/^host:/ {print $$2}')
 TARGET     ?= $(subst -unknown-linux-gnu,-unknown-linux-musl,$(HOST))
 
 RUSTYBENCH_DEFAULT := $(CURDIR)/.work/tools/bin/rustybench
 RUSTYBENCH ?= "$(RUSTYBENCH_DEFAULT)"
 
-.PHONY: build test test-ci check lint bench rustybench release verify-release install
+.PHONY: build clean test test-ci check lint bench rustybench release verify-release install
 
 build:
 	cargo build
+
+clean:
+	@if test -L ./target || { test -e ./target && ! test -d ./target; }; then \
+	  printf '%s\n' 'make clean: ./target must be a local build directory' >&2; exit 1; \
+	fi
+	rm -rf -- ./target
 
 test:
 	@mkdir -p .work/tmp

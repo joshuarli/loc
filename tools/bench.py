@@ -17,6 +17,7 @@ WORKLOADS = {
     'count_non_ascii_in_memory': 'count', 'count_r_dense_in_memory': 'count',
     'count_json_in_memory': 'count', 'render_json_compact': 'render', 'render_human': 'render',
 }
+SAMPLES = {'change': 2, 'scenario': 10}
 
 
 def select(names, areas, skips):
@@ -44,7 +45,7 @@ def parser():
 
 
 def preflight(names):
-    missing = [name for name in ('cargo', 'rustc', 'python3') if not shutil.which(name)]
+    missing = [name for name in ('cargo', 'rustc', 'python3') if shutil.which(name) is None]
     if missing:
         raise ValueError('install missing tools: ' + ', '.join(missing) + '; needed by ' + ', '.join(names))
     fixture_users = [name for name in names if name in ('count_fixtures', 'render_human', 'render_json_compact')]
@@ -55,7 +56,7 @@ def preflight(names):
     subprocess.run(['cargo', '--version'], check=True)
     subprocess.run(['rustc', '--version'], check=True)
     ready = shutil.which('perf-gate-ready')
-    if ready:
+    if ready is not None:
         status = subprocess.run([ready], check=False).returncode
         print(f'host readiness exit: {status}; timings need an independent paired comparison', flush=True)
     else:
@@ -68,9 +69,32 @@ def command(tier, name):
         return [sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tools', '-p', 'test_bench.py']
     if tier == 'full':
         return ['make', 'bench-baseline']
-    sample_count = '2' if tier == 'change' else '10'
     return ['cargo', 'bench', '--bench', 'bench', '--', '--exact', f'bench::{name}',
-            '--sample-count', sample_count, '--sample-size', '1', '--format', 'json']
+            '--sample-count', str(SAMPLES[tier]), '--sample-size', '1', '--format', 'json']
+
+
+def has_measurement(log: str, name: str, required_samples: int) -> bool:
+    for line in log.splitlines():
+        try:
+            report: object = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(report, dict):
+            continue
+        entries: object = report.get('benchmarks')
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict) or entry.get('name') != f'bench::{name}':
+                continue
+            samples: object = entry.get('sample_count')
+            iterations: object = entry.get('iter_count')
+            median: object = entry.get('median_ns')
+            if (type(samples) is int and samples >= required_samples
+                    and type(iterations) is int and iterations >= samples
+                    and type(median) is int and median >= 0):
+                return True
+    return False
 
 
 def main():
@@ -103,17 +127,11 @@ def main():
             with (run_dir / (name + '.log')).open('w') as log:
                 result = subprocess.run(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
             status = result.returncode
-            if status == 0 and args.tier in ('change', 'scenario'):
-                reports = []
-                for line in (run_dir / (name + '.log')).read_text().splitlines():
-                    try:
-                        reports.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-                if not any(isinstance(report, dict) and any(item.get('name') == 'bench::' + name for item in report.get('benchmarks', [])) for report in reports):
-                    status = 1
-                    with (run_dir / (name + '.log')).open('a') as log:
-                        log.write('No matching benchmark measurement found.\n')
+            if (status == 0 and args.tier in SAMPLES
+                    and not has_measurement((run_dir / (name + '.log')).read_text(), name, SAMPLES[args.tier])):
+                status = 1
+                with (run_dir / (name + '.log')).open('a') as log:
+                    log.write(f'No measurement with {SAMPLES[args.tier]} completed samples for {name}.\n')
             results.append({'name': name, 'exit': status, 'seconds': round(time.monotonic() - start, 3)})
         summary = {'tier': args.tier, 'results': results, 'excluded': [n for n in WORKLOADS if n not in names] if args.tier != 'edit' else list(WORKLOADS), 'timing': 'unqualified; no paired baseline', 'verdict': 'completion is not a performance verdict'}
         (run_dir / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')

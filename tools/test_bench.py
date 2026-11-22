@@ -1,6 +1,7 @@
+import json
 import unittest
 
-from bench import WORKLOADS, select
+from bench import WORKLOADS, has_measurement, select
 
 
 class SelectionTest(unittest.TestCase):
@@ -14,6 +15,18 @@ class SelectionTest(unittest.TestCase):
                      (['count_fixtures'], ['render'], [])]:
             with self.assertRaises(ValueError):
                 select(*args)
+
+
+class MeasurementTest(unittest.TestCase):
+    def test_selected_workload_must_complete_its_samples(self):
+        name = 'count_fixtures'
+        complete = {'name': 'bench::count_fixtures', 'sample_count': 2, 'iter_count': 2, 'median_ns': 100}
+        for entry in ({'name': complete['name']}, {**complete, 'sample_count': 1}, {**complete, 'iter_count': 1},
+                      {**complete, 'median_ns': False}, {**complete, 'name': 'bench::count_generated_corpus'}, None):
+            with self.subTest(entry=entry):
+                self.assertFalse(has_measurement(json.dumps({'benchmarks': [entry]}), name, 2))
+        report = json.dumps({'benchmarks': [complete]})
+        self.assertTrue(has_measurement(f'cargo output\n{report}\n', name, 2))
 
 
 if __name__ == '__main__':
