@@ -2,6 +2,8 @@
 
 `loc` counts code, comment, blank, and shebang lines in a tree, by language, and reports them as text or JSON. User-facing usage is the [README](README.md); this file covers working on the crate itself.
 
+The roadmap, [docs/roadmap.md](docs/roadmap.md), holds all current and future work; its Status is the resume point.
+
 ## Commands
 
 Use the toolchain pinned in [rust-toolchain.toml](rust-toolchain.toml).
