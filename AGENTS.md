@@ -42,6 +42,7 @@ the nested fixture and external target survive. A root symlink to the external t
 - Local, platform and home configuration precedence: `configuration_discovery_prefers_local_then_platform_then_home`. TOML merge and init: `src/cli/merge.rs` and `src/init.rs`. JSON schema: `schema_has_one_shape_for_counts_at_every_level`.
 - Public Rust modules and `run`: in-process unit tests exercise parts of the API; external consumer contract test: none. Known consumers: this crate's binary and `benches/bench.rs`; other consumers are unknown.
 - Network endpoints: none. Counting semantics: `tests/fixture_counts.rs` and the CI LineJudge check.
+- Scanner tests return early when required CPU features are absent; verify x86 scanner behavior on a host with AVX2, POPCNT, LZCNT and BMI1. Run in-place mutation tests separately from ordinary builds, since concurrent builds can compile mutated source.
 - Performance workload: `count_generated_corpus` in `benches/bench.rs` walks and counts 800 generated Rust files; `make bench TIER=full` compares `benches/baseline.json`; `make bench TIER=change WORKLOAD=count_generated_corpus` runs one short workload.
 
 ## Invariants
