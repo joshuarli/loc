@@ -31,7 +31,7 @@ fi
 		[[ $tool == loc ]] && bin=$loc
 		path=$(command -v "$bin") || { echo "tool missing: $tool" >&2; exit 1; }
 		version=$("$bin" --version 2>&1 | head -1)
-		if command -v shasum >/dev/null; then hash=$(shasum -a 256 "$path" | cut -d' ' -f1); else hash=$(sha256sum "$path" | cut -d' ' -f1); fi
+		hash=$(sha256sum "$path" | cut -d' ' -f1)
 		printf '%s\t%s\t%s\t%s\n' "$tool" "$path" "$hash" "$version"
 	done
 	echo "loc: $root at $(git -C "$root" rev-parse HEAD) (release profile, see Cargo.toml)"
