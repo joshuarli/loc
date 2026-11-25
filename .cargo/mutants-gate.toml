@@ -1,6 +1,6 @@
 scope = ["src/analysis/line_counter.rs", "src/analysis/line_classifier.rs", "src/langs/detection/shebang.rs"]
 critical = ' in (count_lines|count_text|classify_line|classify_markers|normalize_shebang|shebang_match_len|is_shebang_for|detect_from_shebang)$'
-irrelevant = ["*.md", "LICENSE", "LICENSE.*", "tools/mutants_gate.LICENSE", "tools/bench.py", "tools/test_bench.py", "scripts/bench.sh"]
+irrelevant = ["*.md", "LICENSE", "LICENSE.*", "tools/mutants_gate.LICENSE", "tools/bench.py", "tools/test_bench.py", "scripts/bench.sh", ".github/workflows/lint.yml", ".github/workflows/release.yml"]
 budget_seconds = 600
 timeout_seconds = 25
 build_timeout_seconds = 300
