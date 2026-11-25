@@ -11,9 +11,14 @@ RUN apk add --no-cache \
     bash=5.3.9-r1 \
     binutils=2.45.1-r1 \
     file=5.47-r2 \
-    gcc=15.2.0-r5 \
     make=4.4.1-r4 \
     musl-dev=1.2.6-r3
+
+# Rust links host proc-macros against -lgcc_s, which only gcc's package symlinks; the C
+# compiler and linker driver is the owned clang.
+RUN apk add --no-cache libgcc=15.2.0-r5 \
+    && ln -s libgcc_s.so.1 /usr/lib/libgcc_s.so \
+    && ln -s /opt/laputa/bin/clang /usr/local/bin/cc
 
 # The workspace is mounted at /loc at run time and owned by the host user; git refuses to read it as dubious otherwise.
 RUN git config --system --add safe.directory /loc
