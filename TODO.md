@@ -1,5 +1,5 @@
 Prefix: LOCC
-Next: 4
+Next: 5
 
 # Open work
 ### LOCC-3 · P2 · Qualify x86 scanner mutation coverage
@@ -28,3 +28,12 @@ Next: 4
 - **Recommendation:** Qualify paired comparisons across revisions, host readiness and separate CPU, allocation and I/O attribution for the representative workloads.
 - **Fix with:** bench-pyramid
 - **Effort:** M
+
+### LOCC-4 · P3 · Shebang mutation trial fails every pull request that changes no Rust
+
+- **Area:** ci · mutation
+- **Where:** .github/workflows/mutation-trial.yml; Makefile mutants-diff
+- **Problem:** The `Shebang mutation` workflow runs on every pull request and `make mutants-diff` exits 1 when the diff yields no mutants (`counts: caught=0, missed=0, unviable=0`, wall time 0.0s), so a workflow- or docs-only pull request is red on all three runners (seen on joshuarli/loc#32, which only changed .github/workflows/lint.yml and added .github/tools.lock.json). The cargo-mutants install also falls back to cargo-binstall on aarch64 because taiki-e/install-action lacks 27.1.0 for aarch64_linux.
+- **Recommendation:** Treat an empty mutant set as a pass (or restrict the workflow with `paths:` to the Rust sources it mutates), and install cargo-mutants from a pinned owned or cargo source rather than through install-action's fallback.
+- **Fix with:** none
+- **Effort:** S
